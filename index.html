@@ -7,52 +7,77 @@
 <style>
   :root{
     --done:#34a853; --active:#1a73e8; --late:#ea4335; --todo:#c7ccd1;
+    --amber:#f9ab00;
     --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
+    --leftw:486px; /* 240+72+64+110 */
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
-  header.top{padding:16px 20px 8px;border-bottom:1px solid var(--grid)}
+  header.top{padding:14px 18px 6px}
   h1{font-size:18px;margin:0 0 4px}
   .meta{font-size:12px;color:var(--sub)}
-  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 20px;font-size:12px;border-bottom:1px solid var(--grid);background:#fafafa}
-  .legend{display:flex;gap:12px;align-items:center}
+  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 18px;font-size:12px;border-bottom:1px solid var(--grid);background:#fafafa}
+  .legend{display:flex;gap:10px;align-items:center}
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
   .kpi{margin-left:auto;display:flex;gap:16px;font-weight:600}
   .kpi b{color:var(--active)}
 
-  /* ガント本体 */
-  .wrap{overflow-x:auto}
+  /* スクロール領域（縦スクロールでヘッダー固定） */
+  .wrap{overflow:auto;max-height:calc(100dvh - 92px);position:relative}
   .gantt{min-width:980px;position:relative}
-  .row{display:grid;grid-template-columns:300px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+
+  .row{display:grid;grid-template-columns:240px 72px 64px 110px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
   .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
-  .label{padding:6px 12px;font-size:13px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-  .row.section .label{font-weight:700}
-  .row.task .label{padding-left:24px;color:#3c4043;font-size:12.5px}
-  .owner{color:var(--sub);font-size:11px;font-weight:400}
+  .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .c.name{font-size:12.5px}
+  .row.section .c.name{font-weight:700}
+  .row.task .c.name{padding-left:22px;color:#3c4043}
+  .c.center{justify-content:center}
+  .sub{color:var(--sub);font-size:11px;font-weight:400}
   .track{position:relative}
-  /* 月ヘッダー */
-  .head{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--grid)}
-  .head .track{display:flex}
-  .month{flex:0 0 auto;border-right:1px solid var(--grid);font-size:11px;color:var(--sub);text-align:center;padding:6px 0;font-weight:600}
+
+  /* 固定ヘッダー（月＋重要イベント＋列見出し） */
+  .head{position:sticky;top:0;z-index:6;background:#fff;border-bottom:2px solid var(--grid)}
+  .head .c{font-weight:700;color:var(--sub);font-size:11.5px;background:#fff}
+  .head .track{display:flex;flex-direction:column}
+  .months{display:flex;border-bottom:1px solid var(--grid)}
+  .month{flex:0 0 auto;border-right:1px solid var(--grid);font-size:11px;color:var(--sub);text-align:center;padding:5px 0;font-weight:700}
+  .milerow{position:relative;height:24px}
+  .mile{position:absolute;top:2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;font-size:9.5px;line-height:1.1;white-space:nowrap;color:#b06000}
+  .mile b{font-weight:700}
+  .mile.key{color:var(--late)}
+  .mflag{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid currentColor;margin-bottom:1px}
+
   /* バー */
   .bar{position:absolute;top:5px;height:18px;border-radius:5px;display:flex;align-items:center;padding:0 6px;color:#fff;font-size:10.5px;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
   .bar.done{background:var(--done)} .bar.active{background:var(--active)}
   .bar.late{background:var(--late)} .bar.todo{background:var(--todo);color:#5f6368}
   .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.55}
-  .pct{margin-left:6px;opacity:.85}
-  /* 今日ライン */
-  .today{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:4}
+
+  /* 状態バッジ */
+  .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
+  .pill.done{background:var(--done)} .pill.active{background:var(--active)}
+  .pill.late{background:var(--late)} .pill.todo{background:#9aa0a6}
+
+  /* 達成率（大項目） */
+  .prog{display:flex;align-items:center;gap:6px;width:100%}
+  .pbar{flex:1;height:8px;background:#e3e6ea;border-radius:5px;overflow:hidden}
+  .pfill{height:100%;border-radius:5px}
+  .pnum{font-size:11px;font-weight:700;min-width:30px;text-align:right}
+
+  /* 今日ライン・グリッド */
+  .today{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:3}
   .today::after{content:"今日";position:absolute;top:0;left:3px;font-size:10px;color:var(--today);font-weight:700;background:#fff;padding:0 2px}
-  footer{padding:12px 20px;font-size:11px;color:var(--sub)}
-  .gridlines{position:absolute;top:0;bottom:0;left:300px;right:0;display:flex;pointer-events:none;z-index:0}
+  .gridlines{position:absolute;top:0;bottom:0;left:var(--leftw);right:0;display:flex;pointer-events:none;z-index:0}
   .gl{flex:0 0 auto;border-right:1px solid var(--grid2)}
+  footer{padding:10px 18px;font-size:11px;color:var(--sub)}
 </style>
 </head>
 <body>
 <header class="top">
   <h1>🗓 プロジェクト 進捗ガント</h1>
-  <div class="meta">大項目 × タスクの進捗を全体スケジュールで俯瞰。緑=完了 / 青=進行中 / 赤=遅延 / 灰=未着手</div>
+  <div class="meta">大項目 × タスクの進捗を全体スケジュールで俯瞰。状態・担当・達成率つき</div>
 </header>
 <div class="toolbar">
   <div class="legend">
@@ -67,12 +92,12 @@
 <div class="wrap">
   <div class="gantt" id="gantt"></div>
 </div>
-<footer>※ 「今日」ラインは閲覧した日付に自動追従します。</footer>
+<footer>※ 「今日」ラインは閲覧した日付に自動追従します。重要イベントは月軸の下に表示。</footer>
 
 <script>
-// ===== データ（master_plan.md より）=====
-// d:done(完了) / 日付は YYYY-MM-DD
-const RANGE_START = "2026-05-01", RANGE_END = "2026-12-31";
+const RANGE_START="2026-05-01", RANGE_END="2026-12-31";
+// 重要イベント（月→ラベル）
+const MILESTONES={ "8月":{t:"サンプル完成"}, "9月":{t:"事前集客"}, "10月":{t:"Makuake公開",key:true}, "11月":{t:"Makuake終了"}, "12月":{t:"配送・一般販売開始"} };
 const DATA = [
  {s:"1. サンプル制作", t:[
    {n:"スティックサンプル受領・確認", o:"一馬", a:"2026-06-20", b:"2026-06-25", d:true},
@@ -100,13 +125,13 @@ const DATA = [
  ]},
  {s:"4. パッケージ", t:[
    {n:"方向性（A/C案）を藤井さんと合意", o:"一馬/D-noum", a:"2026-07-01", b:"2026-07-15"},
-   {n:"ザ・パック関本さんへ相談・発注サイズ確定", o:"一馬", a:"2026-07-03", b:"2026-07-31"},
+   {n:"ザ・パック関本さんへ相談・発注サイズ確定", o:"一馬/ザ・パック", a:"2026-07-03", b:"2026-07-31"},
    {n:"パッケージデザイン制作", o:"D-noum", a:"2026-08-01", b:"2026-08-31"},
    {n:"化粧箱 量産発注", o:"一馬", a:"2026-09-01", b:"2026-09-15"},
  ]},
  {s:"5. ページ制作", t:[
    {n:"OKIAMI 受諾フォロー・打合せ設定", o:"", a:"2026-06-01", b:"2026-06-15", d:true},
-   {n:"OKIAMI 打合せ（概要共有）", o:"一馬", a:"2026-06-30", b:"2026-06-30"},
+   {n:"OKIAMI 打合せ（概要共有）", o:"一馬/OKIAMI", a:"2026-06-30", b:"2026-06-30"},
    {n:"ページ構成・原稿 確定", o:"一馬/OKIAMI", a:"2026-08-01", b:"2026-09-15"},
    {n:"リターン設計 確定", o:"一馬/OKIAMI", a:"2026-08-01", b:"2026-09-15"},
    {n:"Makuakeページ 仕上げ", o:"一馬/OKIAMI", a:"2026-09-01", b:"2026-09-30"},
@@ -119,14 +144,14 @@ const DATA = [
    {n:"プレスリリース原稿・配信先", o:"一馬", a:"2026-09-01", b:"2026-09-30"},
  ]},
  {s:"7. 撮影", t:[
-   {n:"カメラマン（山根さん）声がけ", o:"一馬", a:"2026-07-01", b:"2026-07-15"},
+   {n:"カメラマン（山根さん）声がけ", o:"一馬/山根", a:"2026-07-01", b:"2026-07-15"},
    {n:"撮影指示書 作成", o:"一馬/山根", a:"2026-07-10", b:"2026-07-31"},
    {n:"撮影スケジュール・予算 確定", o:"一馬", a:"2026-07-15", b:"2026-07-31"},
    {n:"北海道ロケ可否 相談", o:"一馬/D-noum", a:"2026-07-01", b:"2026-07-31"},
    {n:"撮影実施（静止画＋動画）", o:"山根", a:"2026-08-01", b:"2026-08-31"},
  ]},
  {s:"8. 広告（事前集客）", t:[
-   {n:"ナオキくん（広告運用）声がけ", o:"一馬", a:"2026-07-01", b:"2026-07-31"},
+   {n:"ナオキくん（広告運用）声がけ", o:"一馬/ナオキ", a:"2026-07-01", b:"2026-07-31"},
    {n:"公式LINE開設", o:"一馬", a:"2026-08-01", b:"2026-08-15"},
    {n:"事前登録LP作成", o:"一馬/ナオキ", a:"2026-08-01", b:"2026-08-31"},
    {n:"広告予算・目標 設計", o:"一馬/ナオキ", a:"2026-08-01", b:"2026-08-31"},
@@ -152,62 +177,73 @@ const DATA = [
  ]},
 ];
 
-// ===== 描画 =====
-const DAY = 86400000;
-const r0 = new Date(RANGE_START), r1 = new Date(RANGE_END);
-const totalDays = Math.round((r1 - r0)/DAY) + 1;
-const today = new Date(); today.setHours(0,0,0,0);
-const pos = d => ((new Date(d) - r0)/DAY) / totalDays * 100;
-const wid = (a,b) => ((new Date(b) - new Date(a))/DAY + 1) / totalDays * 100;
+const DAY=86400000;
+const r0=new Date(RANGE_START), r1=new Date(RANGE_END);
+const totalDays=Math.round((r1-r0)/DAY)+1;
+const today=new Date(); today.setHours(0,0,0,0);
+const pos=d=>((new Date(d)-r0)/DAY)/totalDays*100;
+const wid=(a,b)=>((new Date(b)-new Date(a))/DAY+1)/totalDays*100;
+const STLABEL={done:"完了",active:"進行中",late:"遅延",todo:"未着手"};
+function status(t){ if(t.d)return"done"; const a=new Date(t.a),b=new Date(t.b);
+  if(b<today)return"late"; if(a<=today&&today<=b)return"active"; return"todo"; }
+function owner(o){ if(!o)return["",""]; const p=o.split("/"); return [p[0], p.slice(1).join("・")]; }
+function pctColor(p){ return p>=100?"var(--done)":p>=50?"var(--active)":p>0?"var(--amber)":"var(--todo)"; }
 
-function status(t){
-  if(t.d) return "done";
-  const a=new Date(t.a), b=new Date(t.b);
-  if(b < today) return "late";
-  if(a <= today && today <= b) return "active";
-  return "todo";
-}
-
-// 月ヘッダー
-const months=[]; let m=new Date(r0);
+// 月（left/width%）
+const months=[]; let m=new Date(r0), acc=0;
 while(m<=r1){
-  const next=new Date(m.getFullYear(), m.getMonth()+1, 1);
-  const end = next>r1? new Date(r1.getTime()+DAY) : next;
-  const days=(end-m)/DAY;
-  months.push({label:(m.getMonth()+1)+"月", w: days/totalDays*100});
-  m=next;
+  const next=new Date(m.getFullYear(),m.getMonth()+1,1);
+  const end=next>r1?new Date(r1.getTime()+DAY):next;
+  const w=((end-m)/DAY)/totalDays*100;
+  months.push({label:(m.getMonth()+1)+"月", left:acc, w}); acc+=w; m=next;
 }
 
 const g=document.getElementById("gantt");
-let html="";
-// gridlines (月境界)
-html+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}%"></div>`).join("")+'</div>';
-// 今日ライン
+let h="";
+// グリッド線・今日ライン
+h+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}%"></div>`).join("")+'</div>';
 const tp=pos(today.toISOString().slice(0,10));
-if(tp>=0 && tp<=100){ html+=`<div class="today" style="left:calc(300px + ${tp/100} * (100% - 300px))"></div>`; }
-// ヘッダー行
-html+='<div class="row head"><div class="label">大項目 / タスク</div><div class="track">'
-   + months.map(mo=>`<div class="month" style="width:${mo.w}%">${mo.label}</div>`).join("")
-   + '</div></div>';
+if(tp>=0&&tp<=100) h+=`<div class="today" style="left:calc(var(--leftw) + ${tp/100} * (100% - var(--leftw)))"></div>`;
+
+// 固定ヘッダー（列見出し＋月＋重要イベント）
+const monthsHtml=months.map(mo=>`<div class="month" style="width:${mo.w}%">${mo.label}</div>`).join("");
+const milesHtml=months.map(mo=>{ const mi=MILESTONES[mo.label]; if(!mi)return""; const c=mo.left+mo.w/2;
+  return `<div class="mile ${mi.key?'key':''}" style="left:${c}%"><span class="mflag"></span><b>${mi.t}</b></div>`; }).join("");
+h+=`<div class="row head">
+  <div class="c name">大項目 / タスク</div>
+  <div class="c center">状態</div>
+  <div class="c center">主担当</div>
+  <div class="c center">パートナー</div>
+  <div class="track"><div class="months">${monthsHtml}</div><div class="milerow">${milesHtml}</div></div>
+</div>`;
 
 let done=0,total=0,late=0;
 DATA.forEach(sec=>{
-  const a=sec.t.reduce((p,t)=> new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
-  const b=sec.t.reduce((p,t)=> new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
-  const dc=sec.t.filter(t=>t.d).length;
-  html+=`<div class="row section"><div class="label">${sec.s}<span class="owner">（${dc}/${sec.t.length}）</span></div>`
-      +`<div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div></div>`;
+  const a=sec.t.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
+  const b=sec.t.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
+  const dc=sec.t.filter(t=>t.d).length, tot=sec.t.length, pc=Math.round(dc/tot*100);
+  h+=`<div class="row section">
+    <div class="c name">${sec.s}<span class="sub">(${dc}/${tot})</span></div>
+    <div class="c" style="grid-column:span 3">
+      <div class="prog"><div class="pbar"><div class="pfill" style="width:${pc}%;background:${pctColor(pc)}"></div></div><span class="pnum" style="color:${pctColor(pc)}">${pc}%</span></div>
+    </div>
+    <div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div>
+  </div>`;
   sec.t.forEach(t=>{
     total++; const st=status(t); if(st==="done")done++; if(st==="late")late++;
-    const label = (st==="done"?"✓ ":st==="late"?"⚠ ":"") ;
-    html+=`<div class="row task"><div class="label" title="${t.n}">${t.n}${t.o?` <span class="owner">${t.o}</span>`:""}</div>`
-        +`<div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${label}</div></div></div>`;
+    const [mn,pt]=owner(t.o);
+    const lbl=(st==="done"?"✓ ":st==="late"?"⚠ ":"");
+    h+=`<div class="row task">
+      <div class="c name" title="${t.n}">${t.n}</div>
+      <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
+      <div class="c center">${mn||"–"}</div>
+      <div class="c center"><span class="sub">${pt||"–"}</span></div>
+      <div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${lbl}</div></div>
+    </div>`;
   });
 });
-g.innerHTML=html;
-
-document.getElementById("kpi").innerHTML =
-  `完了 <b>${done}/${total}</b>　遅延 <b style="color:var(--late)">${late}</b>　公開目標 <b>10月</b>`;
+g.innerHTML=h;
+document.getElementById("kpi").innerHTML=`完了 <b>${done}/${total}</b>　遅延 <b style="color:var(--late)">${late}</b>　公開目標 <b>10月</b>`;
 </script>
 </body>
 </html>
