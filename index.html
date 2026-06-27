@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>進捗ガントチャート</title>
+<style>
+  :root{
+    --done:#34a853; --active:#1a73e8; --late:#ea4335; --todo:#c7ccd1;
+    --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
+  header.top{padding:16px 20px 8px;border-bottom:1px solid var(--grid)}
+  h1{font-size:18px;margin:0 0 4px}
+  .meta{font-size:12px;color:var(--sub)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:10px 20px;font-size:12px;border-bottom:1px solid var(--grid);background:#fafafa}
+  .legend{display:flex;gap:12px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .kpi{margin-left:auto;display:flex;gap:16px;font-weight:600}
+  .kpi b{color:var(--active)}
+
+  /* ガント本体 */
+  .wrap{overflow-x:auto}
+  .gantt{min-width:980px;position:relative}
+  .row{display:grid;grid-template-columns:300px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+  .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
+  .label{padding:6px 12px;font-size:13px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .row.section .label{font-weight:700}
+  .row.task .label{padding-left:24px;color:#3c4043;font-size:12.5px}
+  .owner{color:var(--sub);font-size:11px;font-weight:400}
+  .track{position:relative}
+  /* 月ヘッダー */
+  .head{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--grid)}
+  .head .track{display:flex}
+  .month{flex:0 0 auto;border-right:1px solid var(--grid);font-size:11px;color:var(--sub);text-align:center;padding:6px 0;font-weight:600}
+  /* バー */
+  .bar{position:absolute;top:5px;height:18px;border-radius:5px;display:flex;align-items:center;padding:0 6px;color:#fff;font-size:10.5px;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .bar.done{background:var(--done)} .bar.active{background:var(--active)}
+  .bar.late{background:var(--late)} .bar.todo{background:var(--todo);color:#5f6368}
+  .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.55}
+  .pct{margin-left:6px;opacity:.85}
+  /* 今日ライン */
+  .today{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:4}
+  .today::after{content:"今日";position:absolute;top:0;left:3px;font-size:10px;color:var(--today);font-weight:700;background:#fff;padding:0 2px}
+  footer{padding:12px 20px;font-size:11px;color:var(--sub)}
+  .gridlines{position:absolute;top:0;bottom:0;left:300px;right:0;display:flex;pointer-events:none;z-index:0}
+  .gl{flex:0 0 auto;border-right:1px solid var(--grid2)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🗓 プロジェクト 進捗ガント</h1>
+  <div class="meta">大項目 × タスクの進捗を全体スケジュールで俯瞰。緑=完了 / 青=進行中 / 赤=遅延 / 灰=未着手</div>
+</header>
+<div class="toolbar">
+  <div class="legend">
+    <span><i class="sw" style="background:var(--done)"></i>完了</span>
+    <span><i class="sw" style="background:var(--active)"></i>進行中</span>
+    <span><i class="sw" style="background:var(--late)"></i>遅延</span>
+    <span><i class="sw" style="background:var(--todo)"></i>未着手</span>
+  </div>
+  <div class="kpi" id="kpi"></div>
+</div>
+
+<div class="wrap">
+  <div class="gantt" id="gantt"></div>
+</div>
+<footer>※ 「今日」ラインは閲覧した日付に自動追従します。</footer>
+
+<script>
+// ===== データ（master_plan.md より）=====
+// d:done(完了) / 日付は YYYY-MM-DD
+const RANGE_START = "2026-05-01", RANGE_END = "2026-12-31";
+const DATA = [
+ {s:"1. サンプル制作", t:[
+   {n:"スティックサンプル受領・確認", o:"一馬", a:"2026-06-20", b:"2026-06-25", d:true},
+   {n:"新ボトル探索（蓋上のみ/底蓋廃止/茶こし）アリババ", o:"一馬", a:"2026-06-25", b:"2026-07-20"},
+   {n:"新ボトルデザインをCKBへ共有", o:"一馬/CKB", a:"2026-06-26", b:"2026-07-15"},
+   {n:"スティック8mm加工可否 中野確認", o:"中野", a:"2026-06-26", b:"2026-07-10"},
+   {n:"1000本/500セット（スリットなし）再見積もり", o:"中野", a:"2026-06-25", b:"2026-07-10"},
+   {n:"スティックサンプル完成（最終仕様）", o:"中野", a:"2026-07-10", b:"2026-07-31"},
+   {n:"本体（新ボトル）サンプル完成", o:"CKB/一馬", a:"2026-07-15", b:"2026-08-31"},
+   {n:"固定機構サンプル完成", o:"矢野", a:"2026-07-01", b:"2026-07-31"},
+ ]},
+ {s:"2. 食品衛生検査", t:[
+   {n:"スティック：分析センター問い合わせ", o:"みどり", a:"2026-07-01", b:"2026-07-15"},
+   {n:"スティック：6種を検査依頼・発送", o:"みどり", a:"2026-07-10", b:"2026-07-31"},
+   {n:"スティック：結果受領・保管", o:"みどり", a:"2026-08-01", b:"2026-08-31"},
+   {n:"ガラス容器：規格試験（JFRL）", o:"みどり/一馬", a:"2026-08-01", b:"2026-08-31"},
+ ]},
+ {s:"3. プロダクト仕様（細部決定）", t:[
+   {n:"スティック寸法 確定（160mm/9→8mm/スリット=ワイヤー連動）", o:"一馬/中野/D-noum", a:"2026-06-25", b:"2026-07-15"},
+   {n:"刻印 確定（レーザー/木名のみ/小さく）", o:"D-noum", a:"2026-06-25", b:"2026-07-15"},
+   {n:"ボトル新仕様 確定（上下シュッ/蓋上のみ/茶こし）", o:"一馬/CKB", a:"2026-06-25", b:"2026-07-20"},
+   {n:"フタ色＝グロスブラック 工場確定", o:"一馬/CKB", a:"2026-07-01", b:"2026-07-31"},
+   {n:"焼き加減レシピ確定", o:"みどり", a:"2026-07-01", b:"2026-07-31"},
+   {n:"販売樹種5種 確定（ミズナラ/カラマツ/トドマツ/ハルニレ/クリ・各2本）", o:"", a:"2026-06-20", b:"2026-06-25", d:true},
+ ]},
+ {s:"4. パッケージ", t:[
+   {n:"方向性（A/C案）を藤井さんと合意", o:"一馬/D-noum", a:"2026-07-01", b:"2026-07-15"},
+   {n:"ザ・パック関本さんへ相談・発注サイズ確定", o:"一馬", a:"2026-07-03", b:"2026-07-31"},
+   {n:"パッケージデザイン制作", o:"D-noum", a:"2026-08-01", b:"2026-08-31"},
+   {n:"化粧箱 量産発注", o:"一馬", a:"2026-09-01", b:"2026-09-15"},
+ ]},
+ {s:"5. ページ制作", t:[
+   {n:"OKIAMI 受諾フォロー・打合せ設定", o:"", a:"2026-06-01", b:"2026-06-15", d:true},
+   {n:"OKIAMI 打合せ（概要共有）", o:"一馬", a:"2026-06-30", b:"2026-06-30"},
+   {n:"ページ構成・原稿 確定", o:"一馬/OKIAMI", a:"2026-08-01", b:"2026-09-15"},
+   {n:"リターン設計 確定", o:"一馬/OKIAMI", a:"2026-08-01", b:"2026-09-15"},
+   {n:"Makuakeページ 仕上げ", o:"一馬/OKIAMI", a:"2026-09-01", b:"2026-09-30"},
+ ]},
+ {s:"6. ブランド構築", t:[
+   {n:"MVV・ロゴ・ブランドガイドライン", o:"", a:"2026-05-01", b:"2026-05-31", d:true},
+   {n:"商標登録（第7054354号）", o:"", a:"2026-05-01", b:"2026-05-31", d:true},
+   {n:"ブランドストーリー原稿 整備", o:"一馬", a:"2026-07-01", b:"2026-08-31"},
+   {n:"銘木カード・同梱物 文面/デザイン", o:"一馬/D-noum", a:"2026-08-01", b:"2026-08-31"},
+   {n:"プレスリリース原稿・配信先", o:"一馬", a:"2026-09-01", b:"2026-09-30"},
+ ]},
+ {s:"7. 撮影", t:[
+   {n:"カメラマン（山根さん）声がけ", o:"一馬", a:"2026-07-01", b:"2026-07-15"},
+   {n:"撮影指示書 作成", o:"一馬/山根", a:"2026-07-10", b:"2026-07-31"},
+   {n:"撮影スケジュール・予算 確定", o:"一馬", a:"2026-07-15", b:"2026-07-31"},
+   {n:"北海道ロケ可否 相談", o:"一馬/D-noum", a:"2026-07-01", b:"2026-07-31"},
+   {n:"撮影実施（静止画＋動画）", o:"山根", a:"2026-08-01", b:"2026-08-31"},
+ ]},
+ {s:"8. 広告（事前集客）", t:[
+   {n:"ナオキくん（広告運用）声がけ", o:"一馬", a:"2026-07-01", b:"2026-07-31"},
+   {n:"公式LINE開設", o:"一馬", a:"2026-08-01", b:"2026-08-15"},
+   {n:"事前登録LP作成", o:"一馬/ナオキ", a:"2026-08-01", b:"2026-08-31"},
+   {n:"広告予算・目標 設計", o:"一馬/ナオキ", a:"2026-08-01", b:"2026-08-31"},
+   {n:"事前集客 本格運用", o:"ナオキ", a:"2026-09-01", b:"2026-09-30"},
+ ]},
+ {s:"9. Makuake", t:[
+   {n:"プロジェクト申請・審査", o:"一馬", a:"2026-09-01", b:"2026-09-30"},
+   {n:"事前集客でリスト構築", o:"一馬/ナオキ", a:"2026-09-01", b:"2026-09-30"},
+   {n:"★ Makuake公開", o:"一馬", a:"2026-10-01", b:"2026-10-31"},
+   {n:"会期中の運用", o:"一馬", a:"2026-10-01", b:"2026-11-15"},
+ ]},
+ {s:"10. 物流", t:[
+   {n:"製品仕上げ（焼き加工・組立）", o:"みどり", a:"2026-11-01", b:"2026-11-15"},
+   {n:"同梱物の準備・封入", o:"みどり", a:"2026-11-01", b:"2026-11-20"},
+   {n:"支援者へ発送", o:"一馬/みどり", a:"2026-11-15", b:"2026-11-30"},
+ ]},
+ {s:"11. 一般販売（Shopify/ふるさと納税）", t:[
+   {n:"Shopify：ドメイン取得", o:"一馬", a:"2026-09-01", b:"2026-09-15"},
+   {n:"Shopify：プラン契約・構築", o:"一馬", a:"2026-09-15", b:"2026-11-30"},
+   {n:"ふるさと納税：帯広市の制度調査", o:"一馬", a:"2026-09-01", b:"2026-09-30"},
+   {n:"ふるさと納税 公開", o:"一馬", a:"2026-11-01", b:"2026-11-30"},
+   {n:"Shopify販売開始", o:"一馬", a:"2026-12-01", b:"2026-12-15"},
+ ]},
+];
+
+// ===== 描画 =====
+const DAY = 86400000;
+const r0 = new Date(RANGE_START), r1 = new Date(RANGE_END);
+const totalDays = Math.round((r1 - r0)/DAY) + 1;
+const today = new Date(); today.setHours(0,0,0,0);
+const pos = d => ((new Date(d) - r0)/DAY) / totalDays * 100;
+const wid = (a,b) => ((new Date(b) - new Date(a))/DAY + 1) / totalDays * 100;
+
+function status(t){
+  if(t.d) return "done";
+  const a=new Date(t.a), b=new Date(t.b);
+  if(b < today) return "late";
+  if(a <= today && today <= b) return "active";
+  return "todo";
+}
+
+// 月ヘッダー
+const months=[]; let m=new Date(r0);
+while(m<=r1){
+  const next=new Date(m.getFullYear(), m.getMonth()+1, 1);
+  const end = next>r1? new Date(r1.getTime()+DAY) : next;
+  const days=(end-m)/DAY;
+  months.push({label:(m.getMonth()+1)+"月", w: days/totalDays*100});
+  m=next;
+}
+
+const g=document.getElementById("gantt");
+let html="";
+// gridlines (月境界)
+html+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}%"></div>`).join("")+'</div>';
+// 今日ライン
+const tp=pos(today.toISOString().slice(0,10));
+if(tp>=0 && tp<=100){ html+=`<div class="today" style="left:calc(300px + ${tp/100} * (100% - 300px))"></div>`; }
+// ヘッダー行
+html+='<div class="row head"><div class="label">大項目 / タスク</div><div class="track">'
+   + months.map(mo=>`<div class="month" style="width:${mo.w}%">${mo.label}</div>`).join("")
+   + '</div></div>';
+
+let done=0,total=0,late=0;
+DATA.forEach(sec=>{
+  const a=sec.t.reduce((p,t)=> new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
+  const b=sec.t.reduce((p,t)=> new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
+  const dc=sec.t.filter(t=>t.d).length;
+  html+=`<div class="row section"><div class="label">${sec.s}<span class="owner">（${dc}/${sec.t.length}）</span></div>`
+      +`<div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div></div>`;
+  sec.t.forEach(t=>{
+    total++; const st=status(t); if(st==="done")done++; if(st==="late")late++;
+    const label = (st==="done"?"✓ ":st==="late"?"⚠ ":"") ;
+    html+=`<div class="row task"><div class="label" title="${t.n}">${t.n}${t.o?` <span class="owner">${t.o}</span>`:""}</div>`
+        +`<div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${label}</div></div></div>`;
+  });
+});
+g.innerHTML=html;
+
+document.getElementById("kpi").innerHTML =
+  `完了 <b>${done}/${total}</b>　遅延 <b style="color:var(--late)">${late}</b>　公開目標 <b>10月</b>`;
+</script>
+</body>
+</html>
