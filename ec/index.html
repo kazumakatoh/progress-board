@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EC進捗ガント</title>
+<style>
+  :root{
+    --done:#34a853; --active:#1a73e8; --late:#ea4335; --todo:#c7ccd1;
+    --amber:#f9ab00;
+    --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
+    --leftw:486px; /* 240+72+64+110 */
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
+  header.top{padding:14px 18px 6px}
+  h1{font-size:18px;margin:0 0 4px}
+  .meta{font-size:12px;color:var(--sub)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 18px;font-size:12px;border-bottom:1px solid var(--grid);background:#fafafa}
+  .legend{display:flex;gap:10px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .kpi{margin-left:auto;display:flex;gap:16px;font-weight:600}
+  .kpi b{color:var(--active)}
+
+  /* スクロール領域（縦スクロールでヘッダー固定） */
+  .wrap{overflow:auto;max-height:calc(100dvh - 92px);position:relative}
+  .gantt{min-width:980px;position:relative}
+
+  .row{display:grid;grid-template-columns:240px 72px 64px 110px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+  .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
+  .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .c.name{font-size:12.5px}
+  .row.section .c.name{font-weight:700}
+  .row.task .c.name{padding-left:22px;color:#3c4043}
+  .c.center{justify-content:center}
+  .sub{color:var(--sub);font-size:11px;font-weight:400}
+  .track{position:relative}
+
+  /* 固定ヘッダー（月＋重要イベント＋列見出し） */
+  .head{position:sticky;top:0;z-index:6;background:#fff;border-bottom:2px solid var(--grid)}
+  .head .c{font-weight:700;color:var(--sub);font-size:11.5px;background:#fff}
+  .head .track{display:flex;flex-direction:column}
+  .months{display:flex;border-bottom:1px solid var(--grid)}
+  .month{flex:0 0 auto;border-right:1px solid var(--grid);font-size:11px;color:var(--sub);text-align:center;padding:5px 0;font-weight:700}
+  .milerow{position:relative;height:24px}
+  .mile{position:absolute;top:2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;font-size:9.5px;line-height:1.1;white-space:nowrap;color:#b06000}
+  .mile b{font-weight:700}
+  .mile.key{color:var(--late)}
+  .mflag{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid currentColor;margin-bottom:1px}
+
+  /* バー */
+  .bar{position:absolute;top:5px;height:18px;border-radius:5px;display:flex;align-items:center;padding:0 6px;color:#fff;font-size:10.5px;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .bar.done{background:var(--done)} .bar.active{background:var(--active)}
+  .bar.late{background:var(--late)} .bar.todo{background:var(--todo);color:#5f6368}
+  .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.55}
+
+  /* 状態バッジ */
+  .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
+  .pill.done{background:var(--done)} .pill.active{background:var(--active)}
+  .pill.late{background:var(--late)} .pill.todo{background:#9aa0a6}
+  .pill.cancel{background:#9aa0a6;text-decoration:line-through}
+  .bar.cancel{background:#dadce0;color:#80868b}
+  .row.cancel .c.name{color:#9aa0a6;text-decoration:line-through}
+
+  /* 達成率（大項目） */
+  .prog{display:flex;align-items:center;gap:6px;width:100%}
+  .pbar{flex:1;height:8px;background:#e3e6ea;border-radius:5px;overflow:hidden}
+  .pfill{height:100%;border-radius:5px}
+  .pnum{font-size:11px;font-weight:700;min-width:30px;text-align:right}
+
+  /* 今日ライン・グリッド */
+  .today{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:3}
+  .today::after{content:"今日";position:absolute;top:0;left:3px;font-size:10px;color:var(--today);font-weight:700;background:#fff;padding:0 2px}
+  .gridlines{position:absolute;top:0;bottom:0;left:var(--leftw);right:0;display:flex;pointer-events:none;z-index:0}
+  .gl{flex:0 0 auto;border-right:1px solid var(--grid2)}
+  footer{padding:10px 18px;font-size:11px;color:var(--sub)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🗓 EC進捗ガント</h1>
+  <div class="meta">大項目 × タスクの進捗を全体スケジュールで俯瞰。状態・担当・達成率つき</div>
+</header>
+<div class="toolbar">
+  <div class="legend">
+    <span><i class="sw" style="background:var(--done)"></i>完了</span>
+    <span><i class="sw" style="background:var(--active)"></i>進行中</span>
+    <span><i class="sw" style="background:var(--late)"></i>遅延</span>
+    <span><i class="sw" style="background:var(--todo)"></i>未着手</span>
+  </div>
+  <div class="kpi" id="kpi"></div>
+</div>
+
+<div class="wrap">
+  <div class="gantt" id="gantt"></div>
+</div>
+<footer>※ 「今日」ラインは閲覧した日付に自動追従します。重要イベントは月軸の下に表示。</footer>
+
+<script>
+const RANGE_START="2026-06-15", RANGE_END="2026-09-15";
+// 重要イベント（月→ラベル）
+const MILESTONES={ "7月":{t:"素材到着・制作"}, "8月":{t:"EC公開",key:true} };
+const DATA = [
+ {s:"1. 素材準備（Makuake流用）", t:[
+   {n:"Makuakeページ文章の共有（URL/テキスト）", o:"一馬", a:"2026-06-28", b:"2026-07-15"},
+   {n:"撮影画像の収集・共有（Drive/フォルダ）", o:"一馬", a:"2026-06-28", b:"2026-07-15"},
+   {n:"リターン構成→EC商品ラインナップ確定", o:"一馬", a:"2026-06-28", b:"2026-07-15"},
+ ]},
+ {s:"2. プラットフォーム・環境", t:[
+   {n:"プラットフォーム選定（Shopify/BASE/STORES）", o:"一馬", a:"2026-06-28", b:"2026-07-07"},
+   {n:"ストア作成・アカウント準備", o:"一馬", a:"2026-07-07", b:"2026-07-15"},
+   {n:"ドメイン決定（独自/無料サブドメイン）", o:"一馬", a:"2026-07-07", b:"2026-07-15"},
+ ]},
+ {s:"3. 商品・販売情報", t:[
+   {n:"商品データ雛形（products.csv）整備", o:"Claude", a:"2026-06-25", b:"2026-06-28", d:true},
+   {n:"価格・送料・在庫の確定", o:"一馬", a:"2026-07-01", b:"2026-07-15"},
+   {n:"products.csv へ実データ反映", o:"Claude/一馬", a:"2026-07-15", b:"2026-07-25"},
+ ]},
+ {s:"4. ページ制作", t:[
+   {n:"LP本文の組み立て（Makuake流用）", o:"Claude", a:"2026-07-15", b:"2026-07-25"},
+   {n:"商品ページ制作", o:"Claude", a:"2026-07-15", b:"2026-07-28"},
+   {n:"画像配置・モバイル最適化", o:"Claude", a:"2026-07-20", b:"2026-07-31"},
+ ]},
+ {s:"5. 法定・規約", t:[
+   {n:"法定3ページ ドラフト作成", o:"Claude", a:"2026-06-28", b:"2026-06-28", d:true},
+   {n:"特商法の確定情報（所在地/連絡先/送料/発送日数）反映", o:"一馬/Claude", a:"2026-07-08", b:"2026-07-20"},
+   {n:"返品・プライバシーの最終確定", o:"一馬/Claude", a:"2026-07-08", b:"2026-07-20"},
+ ]},
+ {s:"6. 決済・自社出荷", t:[
+   {n:"決済設定（標準決済/Shopify Payments申請）", o:"一馬", a:"2026-07-10", b:"2026-07-25"},
+   {n:"自社出荷オペ整備（梱包・送料表・発送フロー）", o:"一馬", a:"2026-07-10", b:"2026-07-31"},
+   {n:"テスト購入→出荷フロー検証", o:"一馬", a:"2026-08-01", b:"2026-08-10"},
+ ]},
+ {s:"7. 公開・運用", t:[
+   {n:"全ページ最終確認（モバイル含む）", o:"Claude/一馬", a:"2026-08-05", b:"2026-08-12"},
+   {n:"★ EC公開", o:"一馬", a:"2026-08-12", b:"2026-08-15"},
+   {n:"初期集客・計測（任意・最小投資）", o:"一馬", a:"2026-08-15", b:"2026-08-31"},
+ ]},
+];
+
+const DAY=86400000;
+const r0=new Date(RANGE_START), r1=new Date(RANGE_END);
+const totalDays=Math.round((r1-r0)/DAY)+1;
+const today=new Date(); today.setHours(0,0,0,0);
+const pos=d=>((new Date(d)-r0)/DAY)/totalDays*100;
+const wid=(a,b)=>((new Date(b)-new Date(a))/DAY+1)/totalDays*100;
+const STLABEL={done:"完了",active:"進行中",late:"遅延",todo:"未着手",cancel:"中止"};
+function status(t){ if(t.x)return"cancel"; if(t.d)return"done"; const a=new Date(t.a),b=new Date(t.b);
+  if(b<today)return"late"; if(a<=today&&today<=b)return"active"; return"todo"; }
+function owner(o){ if(!o)return["",""]; const p=o.split("/"); return [p[0], p.slice(1).join("・")]; }
+function pctColor(p){ return p>=100?"var(--done)":p>=50?"var(--active)":p>0?"var(--amber)":"var(--todo)"; }
+
+// 月（left/width%）
+const months=[]; let m=new Date(r0), acc=0;
+while(m<=r1){
+  const next=new Date(m.getFullYear(),m.getMonth()+1,1);
+  const end=next>r1?new Date(r1.getTime()+DAY):next;
+  const w=((end-m)/DAY)/totalDays*100;
+  months.push({label:(m.getMonth()+1)+"月", left:acc, w}); acc+=w; m=next;
+}
+
+const g=document.getElementById("gantt");
+let h="";
+// グリッド線・今日ライン
+h+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}%"></div>`).join("")+'</div>';
+const tp=pos(today.toISOString().slice(0,10));
+if(tp>=0&&tp<=100) h+=`<div class="today" style="left:calc(var(--leftw) + ${tp/100} * (100% - var(--leftw)))"></div>`;
+
+// 固定ヘッダー（列見出し＋月＋重要イベント）
+const monthsHtml=months.map(mo=>`<div class="month" style="width:${mo.w}%">${mo.label}</div>`).join("");
+const milesHtml=months.map(mo=>{ const mi=MILESTONES[mo.label]; if(!mi)return""; const c=mo.left+mo.w/2;
+  return `<div class="mile ${mi.key?'key':''}" style="left:${c}%"><span class="mflag"></span><b>${mi.t}</b></div>`; }).join("");
+h+=`<div class="row head">
+  <div class="c name">大項目 / タスク</div>
+  <div class="c center">状態</div>
+  <div class="c center">主担当</div>
+  <div class="c center">パートナー</div>
+  <div class="track"><div class="months">${monthsHtml}</div><div class="milerow">${milesHtml}</div></div>
+</div>`;
+
+let done=0,total=0,late=0;
+DATA.forEach(sec=>{
+  const a=sec.t.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
+  const b=sec.t.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
+  const act=sec.t.filter(t=>!t.x);
+  const dc=act.filter(t=>t.d).length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
+  h+=`<div class="row section">
+    <div class="c name">${sec.s}<span class="sub">(${dc}/${tot})</span></div>
+    <div class="c" style="grid-column:span 3">
+      <div class="prog"><div class="pbar"><div class="pfill" style="width:${pc}%;background:${pctColor(pc)}"></div></div><span class="pnum" style="color:${pctColor(pc)}">${pc}%</span></div>
+    </div>
+    <div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div>
+  </div>`;
+  sec.t.forEach(t=>{
+    const st=status(t);
+    if(st!=="cancel"){ total++; if(st==="done")done++; if(st==="late")late++; }
+    const [mn,pt]=owner(t.o);
+    const lbl=(st==="done"?"✓ ":st==="late"?"⚠ ":st==="cancel"?"✕ ":"");
+    h+=`<div class="row task${st==="cancel"?" cancel":""}">
+      <div class="c name" title="${t.n}">${t.n}</div>
+      <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
+      <div class="c center">${mn||"–"}</div>
+      <div class="c center"><span class="sub">${pt||"–"}</span></div>
+      <div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${lbl}</div></div>
+    </div>`;
+  });
+});
+g.innerHTML=h;
+document.getElementById("kpi").innerHTML=`完了 <b>${done}/${total}</b>　遅延 <b style="color:var(--late)">${late}</b>　公開目標 <b>8月</b>`;
+</script>
+</body>
+</html>
