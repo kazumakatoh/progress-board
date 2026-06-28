@@ -59,6 +59,9 @@
   .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
   .pill.done{background:var(--done)} .pill.active{background:var(--active)}
   .pill.late{background:var(--late)} .pill.todo{background:#9aa0a6}
+  .pill.cancel{background:#9aa0a6;text-decoration:line-through}
+  .bar.cancel{background:#dadce0;color:#80868b}
+  .row.cancel .c.name{color:#9aa0a6;text-decoration:line-through}
 
   /* 達成率（大項目） */
   .prog{display:flex;align-items:center;gap:6px;width:100%}
@@ -101,18 +104,19 @@ const MILESTONES={ "8月":{t:"サンプル完成"}, "9月":{t:"事前集客"}, "
 const DATA = [
  {s:"1. サンプル制作", t:[
    {n:"スティックサンプル受領・確認", o:"一馬", a:"2026-06-20", b:"2026-06-25", d:true},
-   {n:"新ボトル探索（蓋上のみ/底蓋廃止/茶こし）アリババ", o:"一馬", a:"2026-06-25", b:"2026-07-20"},
-   {n:"新ボトルデザインをCKBへ共有", o:"一馬/CKB", a:"2026-06-26", b:"2026-07-15"},
+   {n:"新ボトル探索（蓋上のみ/底蓋廃止/茶こし）アリババ", o:"一馬", a:"2026-06-25", b:"2026-06-27", d:true},
+   {n:"新ボトル候補を藤井さん(D-noum)チェック", o:"D-noum/一馬", a:"2026-06-27", b:"2026-07-10"},
+   {n:"新ボトルデザインをCKBへ共有", o:"一馬/CKB", a:"2026-06-28", b:"2026-07-15"},
    {n:"スティック8mm加工可否 中野確認", o:"中野", a:"2026-06-26", b:"2026-07-10"},
    {n:"1000本/500セット（スリットなし）再見積もり", o:"中野", a:"2026-06-25", b:"2026-07-10"},
    {n:"スティックサンプル完成（最終仕様）", o:"中野", a:"2026-07-10", b:"2026-07-31"},
    {n:"本体（新ボトル）サンプル完成", o:"CKB/一馬", a:"2026-07-15", b:"2026-08-31"},
-   {n:"固定機構サンプル完成", o:"矢野", a:"2026-07-01", b:"2026-07-31"},
+   {n:"固定機構サンプル完成（矢野）→ 見送り", o:"矢野", a:"2026-07-01", b:"2026-07-31", x:true},
  ]},
  {s:"2. 食品衛生検査", t:[
-   {n:"スティック：分析センター問い合わせ", o:"みどり", a:"2026-07-01", b:"2026-07-15"},
-   {n:"スティック：6種を検査依頼・発送", o:"みどり", a:"2026-07-10", b:"2026-07-31"},
-   {n:"スティック：結果受領・保管", o:"みどり", a:"2026-08-01", b:"2026-08-31"},
+   {n:"スティック：分析センター問い合わせ", o:"みどり", a:"2026-06-20", b:"2026-06-27", d:true},
+   {n:"スティック：5種を検査依頼・発送（6/29発送予定）", o:"みどり", a:"2026-06-29", b:"2026-06-29"},
+   {n:"スティック：結果受領・保管（約3週間）", o:"みどり", a:"2026-07-20", b:"2026-07-25"},
    {n:"ガラス容器：規格試験（JFRL）", o:"みどり/一馬", a:"2026-08-01", b:"2026-08-31"},
  ]},
  {s:"3. プロダクト仕様（細部決定）", t:[
@@ -120,7 +124,7 @@ const DATA = [
    {n:"刻印 確定（レーザー/木名のみ/小さく）", o:"D-noum", a:"2026-06-25", b:"2026-07-15"},
    {n:"ボトル新仕様 確定（上下シュッ/蓋上のみ/茶こし）", o:"一馬/CKB", a:"2026-06-25", b:"2026-07-20"},
    {n:"フタ色＝グロスブラック 工場確定", o:"一馬/CKB", a:"2026-07-01", b:"2026-07-31"},
-   {n:"焼き加減レシピ確定", o:"みどり", a:"2026-07-01", b:"2026-07-31"},
+   {n:"焼き加減（バーナー）テスト・下限把握", o:"みどり", a:"2026-06-15", b:"2026-06-27", d:true},
    {n:"販売樹種5種 確定（ミズナラ/カラマツ/トドマツ/ハルニレ/クリ・各2本）", o:"", a:"2026-06-20", b:"2026-06-25", d:true},
  ]},
  {s:"4. パッケージ", t:[
@@ -152,7 +156,8 @@ const DATA = [
  ]},
  {s:"8. 広告（事前集客）", t:[
    {n:"ナオキくん（広告運用）声がけ", o:"一馬/ナオキ", a:"2026-07-01", b:"2026-07-31"},
-   {n:"公式LINE開設", o:"一馬", a:"2026-08-01", b:"2026-08-15"},
+   {n:"公式LINE開設", o:"一馬", a:"2026-06-15", b:"2026-06-27", d:true},
+   {n:"公式LINE 画像・デザイン整え（撮影後）", o:"一馬", a:"2026-08-15", b:"2026-09-15"},
    {n:"事前登録LP作成", o:"一馬/ナオキ", a:"2026-08-01", b:"2026-08-31"},
    {n:"広告予算・目標 設計", o:"一馬/ナオキ", a:"2026-08-01", b:"2026-08-31"},
    {n:"事前集客 本格運用", o:"ナオキ", a:"2026-09-01", b:"2026-09-30"},
@@ -170,7 +175,7 @@ const DATA = [
  ]},
  {s:"11. 一般販売（Shopify/ふるさと納税）", t:[
    {n:"Shopify：ドメイン取得", o:"一馬", a:"2026-09-01", b:"2026-09-15"},
-   {n:"Shopify：プラン契約・構築", o:"一馬", a:"2026-09-15", b:"2026-11-30"},
+   {n:"Shopify：構築（Claude Codeで制作）11月着手→完了", o:"一馬", a:"2026-11-01", b:"2026-11-30"},
    {n:"ふるさと納税：帯広市の制度調査", o:"一馬", a:"2026-09-01", b:"2026-09-30"},
    {n:"ふるさと納税 公開", o:"一馬", a:"2026-11-01", b:"2026-11-30"},
    {n:"Shopify販売開始", o:"一馬", a:"2026-12-01", b:"2026-12-15"},
@@ -183,8 +188,8 @@ const totalDays=Math.round((r1-r0)/DAY)+1;
 const today=new Date(); today.setHours(0,0,0,0);
 const pos=d=>((new Date(d)-r0)/DAY)/totalDays*100;
 const wid=(a,b)=>((new Date(b)-new Date(a))/DAY+1)/totalDays*100;
-const STLABEL={done:"完了",active:"進行中",late:"遅延",todo:"未着手"};
-function status(t){ if(t.d)return"done"; const a=new Date(t.a),b=new Date(t.b);
+const STLABEL={done:"完了",active:"進行中",late:"遅延",todo:"未着手",cancel:"中止"};
+function status(t){ if(t.x)return"cancel"; if(t.d)return"done"; const a=new Date(t.a),b=new Date(t.b);
   if(b<today)return"late"; if(a<=today&&today<=b)return"active"; return"todo"; }
 function owner(o){ if(!o)return["",""]; const p=o.split("/"); return [p[0], p.slice(1).join("・")]; }
 function pctColor(p){ return p>=100?"var(--done)":p>=50?"var(--active)":p>0?"var(--amber)":"var(--todo)"; }
@@ -221,7 +226,8 @@ let done=0,total=0,late=0;
 DATA.forEach(sec=>{
   const a=sec.t.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
   const b=sec.t.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
-  const dc=sec.t.filter(t=>t.d).length, tot=sec.t.length, pc=Math.round(dc/tot*100);
+  const act=sec.t.filter(t=>!t.x);
+  const dc=act.filter(t=>t.d).length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
   h+=`<div class="row section">
     <div class="c name">${sec.s}<span class="sub">(${dc}/${tot})</span></div>
     <div class="c" style="grid-column:span 3">
@@ -230,10 +236,11 @@ DATA.forEach(sec=>{
     <div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div>
   </div>`;
   sec.t.forEach(t=>{
-    total++; const st=status(t); if(st==="done")done++; if(st==="late")late++;
+    const st=status(t);
+    if(st!=="cancel"){ total++; if(st==="done")done++; if(st==="late")late++; }
     const [mn,pt]=owner(t.o);
-    const lbl=(st==="done"?"✓ ":st==="late"?"⚠ ":"");
-    h+=`<div class="row task">
+    const lbl=(st==="done"?"✓ ":st==="late"?"⚠ ":st==="cancel"?"✕ ":"");
+    h+=`<div class="row task${st==="cancel"?" cancel":""}">
       <div class="c name" title="${t.n}">${t.n}</div>
       <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
       <div class="c center">${mn||"–"}</div>
