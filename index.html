@@ -9,7 +9,7 @@
     --done:#34a853; --active:#1a73e8; --late:#ea4335; --todo:#c7ccd1;
     --amber:#f9ab00;
     --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
-    --leftw:486px; /* 240+72+64+110 */
+    --leftw:546px; /* 300+72+64+110 */
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
@@ -27,7 +27,7 @@
   .wrap{overflow:auto;max-height:calc(100dvh - 92px);position:relative}
   .gantt{min-width:980px;position:relative}
 
-  .row{display:grid;grid-template-columns:240px 72px 64px 110px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+  .row{display:grid;grid-template-columns:300px 72px 64px 110px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
   .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
   .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   .c.name{font-size:12.5px}
@@ -116,13 +116,13 @@ const DATA = [
  ]},
  {s:"2. 食品衛生検査", t:[
    {n:"スティック：分析センター問い合わせ", o:"みどり", a:"2026-06-20", b:"2026-06-27", d:true},
-   {n:"スティック：5種を検査依頼・発送（6/29発送予定）", o:"みどり", a:"2026-06-29", b:"2026-06-29"},
+   {n:"スティック：5種を検査依頼・発送", o:"みどり", a:"2026-06-25", b:"2026-06-30", d:true},
    {n:"スティック：結果受領・保管（約3週間）", o:"みどり", a:"2026-07-20", b:"2026-07-25"},
    {n:"ガラス容器：規格試験（JFRL）", o:"みどり/一馬", a:"2026-08-01", b:"2026-08-31"},
  ]},
  {s:"3. プロダクト仕様（細部決定）", t:[
    {n:"スティック寸法 確定（160mm/9→8mm/スリット=ワイヤー連動）", o:"一馬/中野/D-noum", a:"2026-06-25", b:"2026-07-15"},
-   {n:"刻印 確定（B案=YADORIGIフォント/160mm）", o:"D-noum", a:"2026-06-25", b:"2026-07-15"},
+   {n:"刻印 確定（B案=YADORIGIフォント/160mm）", o:"D-noum", a:"2026-06-25", b:"2026-06-30", d:true},
    {n:"ボトル新仕様 確定（上下シュッ/蓋上のみ/茶こし）", o:"一馬/CKB", a:"2026-06-25", b:"2026-07-20"},
    {n:"フタ色＝グロスブラック 工場確定", o:"一馬/CKB", a:"2026-07-01", b:"2026-07-31"},
    {n:"焼き加減（バーナー）テスト・下限把握", o:"みどり", a:"2026-06-15", b:"2026-06-27", d:true},
