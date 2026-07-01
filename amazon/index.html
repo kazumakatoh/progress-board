@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Amazon 進捗チャート</title>
+<style>
+  :root{
+    --done:#34a853; --active:#1a73e8; --watch:#f9ab00; --todo:#c7ccd1; --cancel:#9aa0a6;
+    --amazon:#ff9900;
+    --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
+    --leftw:596px; /* 226+70+300 */
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
+  header.top{padding:14px 18px 6px;border-top:4px solid var(--amazon)}
+  h1{font-size:18px;margin:0 0 4px}
+  .meta{font-size:12px;color:var(--sub)}
+
+  /* 状況サマリー（現状 / 課題 / 対策） */
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 18px 4px}
+  .card{border:1px solid var(--grid);border-radius:8px;overflow:hidden;background:#fff}
+  .card h2{margin:0;font-size:12.5px;font-weight:700;padding:6px 10px;color:#fff}
+  .card.now h2{background:#1a73e8}
+  .card.issue h2{background:#ea4335}
+  .card.action h2{background:#34a853}
+  .card ul{margin:0;padding:8px 10px 10px 24px;font-size:11.5px;line-height:1.55;color:#3c4043}
+  .card li{margin:1px 0}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 18px;font-size:12px;border-bottom:1px solid var(--grid);background:#fafafa}
+  .legend{display:flex;gap:10px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .note{margin-left:auto;color:var(--sub)}
+
+  .wrap{overflow:auto;max-height:calc(100dvh - 60px);position:relative}
+  .gantt{min-width:1040px;position:relative}
+
+  .row{display:grid;grid-template-columns:226px 70px 300px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+  .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
+  .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden}
+  .c.name{font-size:12.5px;white-space:nowrap;text-overflow:ellipsis}
+  .row.section .c.name{font-weight:700}
+  .row.task .c.name{padding-left:22px;color:#3c4043}
+  .c.memo{color:var(--sub);font-size:11px;line-height:1.35;white-space:normal}
+  .c.center{justify-content:center}
+  .sub{color:var(--sub);font-size:11px;font-weight:400}
+  .track{position:relative}
+
+  .head{position:sticky;top:0;z-index:6;background:#fff;border-bottom:2px solid var(--grid)}
+  .head .c{font-weight:700;color:var(--sub);font-size:11.5px;background:#fff}
+  .head .track{display:flex;flex-direction:column}
+  .months{display:flex;border-bottom:1px solid var(--grid)}
+  .month{flex:0 0 auto;border-right:1px solid var(--grid);font-size:10px;color:var(--sub);text-align:center;padding:4px 0;font-weight:700;line-height:1.2}
+  .yr{font-size:9px;color:#9aa0a6}
+  .milerow{position:relative;height:22px}
+  .mile{position:absolute;top:2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;font-size:9.5px;line-height:1.1;white-space:nowrap;color:#ea4335}
+  .mile b{font-weight:700}
+  .mflag{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid currentColor;margin-bottom:1px}
+
+  .bar{position:absolute;top:5px;height:18px;border-radius:5px;display:flex;align-items:center;padding:0 6px;color:#fff;font-size:10.5px;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .bar.done{background:var(--done)} .bar.active{background:var(--active)}
+  .bar.watch{background:var(--watch)} .bar.todo{background:var(--todo);color:#5f6368}
+  .bar.cancel{background:#dadce0;color:#80868b}
+  .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.5}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
+  .pill.done{background:var(--done)} .pill.active{background:var(--active)}
+  .pill.watch{background:var(--watch)} .pill.todo{background:var(--cancel)}
+  .pill.cancel{background:var(--cancel);text-decoration:line-through}
+  .row.cancel .c.name{color:var(--cancel);text-decoration:line-through}
+
+  .prog{display:flex;align-items:center;gap:6px;width:100%}
+  .pbar{flex:1;height:8px;background:#e3e6ea;border-radius:5px;overflow:hidden}
+  .pfill{height:100%;border-radius:5px}
+  .pnum{font-size:11px;font-weight:700;min-width:30px;text-align:right}
+
+  .today{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:3}
+  .today::after{content:"今日";position:absolute;top:0;left:3px;font-size:10px;color:var(--today);font-weight:700;background:#fff;padding:0 2px}
+  .gridlines{position:absolute;top:0;bottom:0;left:var(--leftw);right:0;display:flex;pointer-events:none;z-index:0}
+  .gl{flex:0 0 auto;border-right:1px solid var(--grid2)}
+  footer{padding:10px 18px;font-size:11px;color:var(--sub)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🗓 Amazon 進捗チャート</h1>
+  <div class="meta">Amazon物販の「現状・課題・対策」と進行タスクを共有。状況が変わったら書き換え。<b>最終更新：<span id="upd"></span></b></div>
+</header>
+
+<!-- 状況サマリー -->
+<section class="summary" id="summary"></section>
+
+<div class="toolbar">
+  <div class="legend">
+    <span><i class="sw" style="background:var(--done)"></i>完了</span>
+    <span><i class="sw" style="background:var(--active)"></i>進行中</span>
+    <span><i class="sw" style="background:var(--watch)"></i>様子見</span>
+    <span><i class="sw" style="background:var(--todo)"></i>未着手</span>
+  </div>
+  <div class="note">※「今日」ラインは閲覧日に自動追従。重要イベントは月軸下に表示。</div>
+</div>
+
+<div class="wrap">
+  <div class="gantt" id="gantt"></div>
+</div>
+<footer>更新運用：月初の野村さんとの打合せ前に「現状・課題・対策」と各タスクの状態を書き換える</footer>
+
+<script>
+const UPDATED = "2026-07-01";
+const RANGE_START = "2026-06-01", RANGE_END = "2027-12-31";
+// 重要イベント（YYYY-MM → ラベル）
+const MILESTONES = { "2026-07":{t:"プライムデー"}, "2026-11":{t:"ブラックフライデー"}, "2027-07":{t:"2027夏商戦",key:true} };
+
+// 状況サマリー（月初に書き換え）
+const STATUS = {
+  現状: [
+    "6月売上はほぼ横ばい。",
+    "新商品（熱中症＝ポカリ/アクエリ/アメ、ネイチャーメイド）は投入済みだが売れ行きは微妙。",
+    "熱中症は気温待ち。アメはACOS悪化、ポカリ/アクエリは広告良好。",
+    "ネイチャーメイドはACOS50%超で赤字（元単価が安く広告と相性が悪い）。",
+    "広告転売の手法はノーブランド登録への風当たりが強く、手法として追い風ではない。",
+    "並行して YADORIGI（自社ブランド）進行中 ※詳細は専用ガントチャート。",
+    "簡易自社ブランドは現状ストップ。2027年夏商戦に向けて動く方針。",
+  ],
+  課題: [
+    "転売モデルの限界（プラットフォームの逆風・低い粗利率）。",
+    "既存商品の広告最適化（赤字商品の是正）。",
+    "外注化の仕組みづくり（作業過多／“出血死”回避）。",
+    "ネイチャーメイドの赤字広告の立て直し。",
+    "自社ブランドに手が回らない（人手・時間）。",
+  ],
+  対策: [
+    "粗利率を考慮しても、転売 → 自社ブランドへの移行が合理的。段階的に移行を進める。",
+    "ネイチャーメイド：値下げ＋広告見直し（改善なければ停止判断）。",
+    "アメ：広告見直しでACOS改善。ポカリ/アクエリは気温上昇後に販売強化。",
+    "外注化：商品登録・画像・運用をココナラ等で外注化。",
+    "自社ブランド（怪談シリーズ）：2027夏に向け段階的にリサーチ着手。",
+  ],
+};
+
+// タスク（st: done/active/watch/todo/cancel、memo: 現状メモ）
+const DATA = [
+ {s:"1. すぐに始められる新商品", t:[
+   {n:"熱中症対策：ポカリ/アクエリ/アメ 投入", st:"done", memo:"6月投入済", a:"2026-06-01", b:"2026-06-30"},
+   {n:"熱中症：VINE登録", st:"done", a:"2026-06-01", b:"2026-06-30"},
+   {n:"熱中症：広告効果の検証", st:"active", memo:"アメACOS悪／ポカリ・アクエリ良好", a:"2026-06-15", b:"2026-08-31"},
+   {n:"熱中症：アメ ACOS改善（広告見直し）", st:"active", memo:"入札・KW調整", a:"2026-07-01", b:"2026-08-31"},
+   {n:"熱中症：気温上昇後の販売強化", st:"watch", memo:"猛暑待ち", a:"2026-07-01", b:"2026-08-31"},
+   {n:"ネイチャーメイド：商品登録", st:"done", a:"2026-05-01", b:"2026-05-31"},
+   {n:"ネイチャーメイド：広告配信", st:"done", a:"2026-05-01", b:"2026-06-30"},
+   {n:"ネイチャーメイド：VINE", st:"done", a:"2026-06-01", b:"2026-06-30"},
+   {n:"ネイチャーメイド：効果検証", st:"active", memo:"ACOS50%超・赤字", a:"2026-06-15", b:"2026-08-31"},
+   {n:"ネイチャーメイド：価格改定（値下げ）", st:"active", memo:"値下げで様子見", a:"2026-07-01", b:"2026-07-31"},
+   {n:"ネイチャーメイド：広告ACOS改善 / 停止判断", st:"active", memo:"改善なければ停止", a:"2026-07-01", b:"2026-08-31"},
+ ]},
+ {s:"2. 広告最適化（既存商品）", t:[
+   {n:"主力商品の ACOS/TACOS モニタリング", st:"active", memo:"月次で確認", a:"2026-06-01", b:"2027-12-31"},
+   {n:"赤字商品の広告是正", st:"active", a:"2026-07-01", b:"2026-12-31"},
+   {n:"入札・キーワード最適化", st:"active", a:"2026-06-01", b:"2027-12-31"},
+ ]},
+ {s:"3. 簡易自社ブランド（怪談シリーズ）※2027夏商戦ターゲット・現状停止", t:[
+   {n:"商品リサーチ", st:"todo", memo:"2027夏へ向け着手予定", a:"2027-01-01", b:"2027-02-28"},
+   {n:"展示会リサーチ", st:"todo", a:"2027-01-01", b:"2027-02-28"},
+   {n:"中国工場サンプル取得", st:"todo", a:"2027-02-01", b:"2027-03-31"},
+   {n:"ブランド構築（怪談シリーズ）", st:"todo", a:"2027-02-01", b:"2027-03-31"},
+   {n:"原価・利益設計（値決め）", st:"todo", a:"2027-03-01", b:"2027-03-31"},
+   {n:"写真撮影", st:"todo", a:"2027-03-01", b:"2027-04-30"},
+   {n:"デザイン制作", st:"todo", a:"2027-03-01", b:"2027-04-30"},
+   {n:"パッケージ制作", st:"todo", a:"2027-04-01", b:"2027-05-31"},
+   {n:"ページ制作", st:"todo", a:"2027-04-01", b:"2027-05-31"},
+   {n:"VINE / 初期レビュー獲得", st:"todo", a:"2027-05-01", b:"2027-06-30"},
+   {n:"Amazon販売", st:"todo", a:"2027-05-01", b:"2027-08-31"},
+   {n:"Shopifyで広告販売の検証", st:"todo", a:"2027-06-01", b:"2027-08-31"},
+ ]},
+ {s:"4. その他", t:[
+   {n:"外注化の仕組み（登録・画像・運用）", st:"active", memo:"ココナラで店長/運用者を探す", a:"2026-07-01", b:"2026-12-31"},
+   {n:"2つ目のアカウント登録", st:"todo", a:"2026-08-01", b:"2026-09-30"},
+ ]},
+];
+
+const DAY=86400000;
+const r0=new Date(RANGE_START), r1=new Date(RANGE_END);
+const totalDays=Math.round((r1-r0)/DAY)+1;
+const today=new Date(); today.setHours(0,0,0,0);
+const pos=d=>((new Date(d)-r0)/DAY)/totalDays*100;
+const wid=(a,b)=>((new Date(b)-new Date(a))/DAY+1)/totalDays*100;
+const STLABEL={done:"完了",active:"進行中",watch:"様子見",todo:"未着手",cancel:"中止"};
+
+// サマリー描画
+document.getElementById("upd").textContent = UPDATED;
+const cardMeta=[["now","現状","🔵"],["issue","課題","🔴"],["action","対策","🟢"]];
+document.getElementById("summary").innerHTML = cardMeta.map(function(cm){
+  var cls=cm[0], key=cm[1], ic=cm[2];
+  return `<div class="card ${cls}"><h2>${ic} ${key}</h2><ul>${STATUS[key].map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+}).join("");
+
+// 月（left/width%）
+const months=[]; let mcur=new Date(r0.getFullYear(), r0.getMonth(), 1), acc=0;
+while(mcur<=r1){
+  const next=new Date(mcur.getFullYear(),mcur.getMonth()+1,1);
+  const start=mcur<r0?r0:mcur;
+  const end=next>r1?new Date(r1.getTime()+DAY):next;
+  const w=((end-start)/DAY)/totalDays*100;
+  const ym=mcur.getFullYear()+"-"+String(mcur.getMonth()+1).padStart(2,"0");
+  months.push({label:(mcur.getMonth()+1)+"月", yr:(mcur.getMonth()===0||months.length===0)?("'"+String(mcur.getFullYear()).slice(2)):"", ym, left:acc, w});
+  acc+=w; mcur=next;
+}
+
+const g=document.getElementById("gantt");
+let h="";
+h+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}%"></div>`).join("")+'</div>';
+const tp=pos(today.toISOString().slice(0,10));
+if(tp>=0&&tp<=100) h+=`<div class="today" style="left:calc(var(--leftw) + ${tp/100} * (100% - var(--leftw)))"></div>`;
+
+const monthsHtml=months.map(mo=>`<div class="month" style="width:${mo.w}%">${mo.yr?`<div class="yr">${mo.yr}</div>`:""}${mo.label}</div>`).join("");
+const milesHtml=months.map(mo=>{ const mi=MILESTONES[mo.ym]; if(!mi)return""; const c=mo.left+mo.w/2;
+  return `<div class="mile ${mi.key?'key':''}" style="left:${c}%"><span class="mflag"></span><b>${mi.t}</b></div>`; }).join("");
+h+=`<div class="row head">
+  <div class="c name">大項目 / タスク</div>
+  <div class="c center">状態</div>
+  <div class="c">現状メモ</div>
+  <div class="track"><div class="months">${monthsHtml}</div><div class="milerow">${milesHtml}</div></div>
+</div>`;
+
+DATA.forEach(sec=>{
+  const a=sec.t.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
+  const b=sec.t.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
+  const act=sec.t.filter(t=>t.st!=="cancel");
+  const dc=act.filter(t=>t.st==="done").length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
+  const pcColor=pc>=100?"var(--done)":pc>=50?"var(--active)":pc>0?"var(--watch)":"var(--todo)";
+  h+=`<div class="row section">
+    <div class="c name">${sec.s}<span class="sub">(${dc}/${tot})</span></div>
+    <div class="c" style="grid-column:span 2">
+      <div class="prog"><div class="pbar"><div class="pfill" style="width:${pc}%;background:${pcColor}"></div></div><span class="pnum" style="color:${pcColor}">${pc}%</span></div>
+    </div>
+    <div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div>
+  </div>`;
+  sec.t.forEach(t=>{
+    const st=t.st||"todo";
+    const lbl=(st==="done"?"✓ ":st==="watch"?"◔ ":"");
+    h+=`<div class="row task${st==="cancel"?" cancel":""}">
+      <div class="c name" title="${t.n}">${t.n}</div>
+      <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
+      <div class="c memo">${t.memo||""}</div>
+      <div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${lbl}</div></div>
+    </div>`;
+  });
+});
+g.innerHTML=h;
+</script>
+</body>
+</html>
