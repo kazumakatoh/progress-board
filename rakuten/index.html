@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>楽天 イロドリ・ラボ ガントチャート</title>
+<style>
+  :root{
+    --done:#34a853; --active:#1a73e8; --late:#ea4335; --todo:#c7ccd1;
+    --amber:#f9ab00; --rakuten:#bf0000;
+    --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
+    --leftw:486px; /* 240+72+64+110 */
+    --daypx:5px;   /* 1日あたりの横幅（月を横スクロールで見せる） */
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
+  header.top{padding:14px 18px 6px;border-top:4px solid var(--rakuten)}
+  h1{font-size:18px;margin:0 0 4px}
+  .meta{font-size:12px;color:var(--sub)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 18px;font-size:12px;border-bottom:1px solid var(--grid);background:#fafafa}
+  .legend{display:flex;gap:10px;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;color:var(--sub)}
+  .kpi{margin-left:auto;display:flex;gap:16px;font-weight:600}
+  .kpi b{color:var(--active)}
+
+  /* スクロール領域 */
+  .wrap{overflow:auto;max-height:calc(100dvh - 96px);position:relative}
+  .gantt{width:max-content;position:relative}
+
+  .row{display:flex;min-height:30px}
+  .row.section{background:#f5f7fb}
+  /* 左の固定ブロック（大項目/タスク・状態・主担当・パートナー） */
+  .left{flex:0 0 var(--leftw);display:grid;grid-template-columns:240px 72px 64px 110px;position:sticky;left:0;z-index:3;background:#fff;box-shadow:1px 0 0 var(--grid);border-bottom:1px solid var(--grid2)}
+  .row.section .left{background:#f5f7fb;border-bottom:1px solid var(--grid)}
+  .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .c.name{font-size:12.5px}
+  .row.section .c.name{font-weight:700}
+  .row.task .c.name{padding-left:22px;color:#3c4043}
+  .c.center{justify-content:center}
+  .sub{color:var(--sub);font-size:11px;font-weight:400}
+
+  /* 右のタイムライン（横スクロール本体） */
+  .track{position:relative;flex:0 0 auto;border-bottom:1px solid var(--grid2)}
+  .row.section .track{border-bottom:1px solid var(--grid)}
+  .head .left,.head .track{border-bottom:none}
+
+  /* 固定ヘッダー */
+  .head{position:sticky;top:0;z-index:6;background:#fff;border-bottom:2px solid var(--grid)}
+  .head .left{z-index:7}
+  .head .c{font-weight:700;color:var(--sub);font-size:11.5px;background:#fff}
+  .head .track{display:flex;flex-direction:column}
+  .months{display:flex}
+  .month{flex:0 0 auto;border-right:1px solid var(--grid);font-size:11px;color:var(--sub);text-align:center;padding:5px 0;font-weight:700}
+  .milerow{position:relative;height:24px;border-top:1px solid var(--grid)}
+  .mile{position:absolute;top:2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;font-size:9.5px;line-height:1.1;white-space:nowrap;color:#b06000}
+  .mile b{font-weight:700}
+  .mile.key{color:var(--late)}
+  .mflag{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid currentColor;margin-bottom:1px}
+
+  /* バー */
+  .bar{position:absolute;top:5px;height:18px;border-radius:5px;display:flex;align-items:center;padding:0 6px;color:#fff;font-size:10.5px;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12);z-index:1}
+  .bar.done{background:var(--done)} .bar.active{background:var(--active)}
+  .bar.late{background:var(--late)} .bar.todo{background:var(--todo);color:#5f6368}
+  .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.55}
+
+  /* 状態バッジ */
+  .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
+  .pill.done{background:var(--done)} .pill.active{background:var(--active)}
+  .pill.late{background:var(--late)} .pill.todo{background:#9aa0a6}
+  .pill.cancel{background:#9aa0a6;text-decoration:line-through}
+  .bar.cancel{background:#dadce0;color:#80868b}
+  .row.cancel .c.name{color:#9aa0a6;text-decoration:line-through}
+
+  /* 達成率（大項目） */
+  .prog{display:flex;align-items:center;gap:6px;width:100%}
+  .pbar{flex:1;height:8px;background:#e3e6ea;border-radius:5px;overflow:hidden}
+  .pfill{height:100%;border-radius:5px}
+  .pnum{font-size:11px;font-weight:700;min-width:30px;text-align:right}
+
+  /* 今日ライン・グリッド（タイムライン上のオーバーレイ） */
+  .today{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:2}
+  .today::after{content:"今日";position:absolute;top:56px;left:3px;font-size:10px;color:var(--today);font-weight:700;background:#fff;padding:0 2px}
+  .gridlines{position:absolute;top:0;bottom:0;left:var(--leftw);display:flex;pointer-events:none;z-index:0}
+  .gl{flex:0 0 auto;border-right:1px solid var(--grid2)}
+  footer{padding:10px 18px;font-size:11px;color:var(--sub)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🛒 楽天「イロドリ・ラボ」ガントチャート</h1>
+  <div class="meta">楽天店舗の<b>販売検証 → 戦略転換 → 集客改善→ 運用体制の構築</b>までを俯瞰。状態・担当・パートナー・達成率つき</div>
+</header>
+<div class="toolbar">
+  <div class="legend">
+    <span><i class="sw" style="background:var(--done)"></i>完了</span>
+    <span><i class="sw" style="background:var(--active)"></i>進行中</span>
+    <span><i class="sw" style="background:var(--late)"></i>遅延</span>
+    <span><i class="sw" style="background:var(--todo)"></i>未着手</span>
+  </div>
+  <label class="toggle"><input type="checkbox" id="showDone"> 完了も表示</label>
+  <div class="kpi" id="kpi"></div>
+</div>
+
+<div class="wrap">
+  <div class="gantt" id="gantt"></div>
+</div>
+<footer>※ 既定では<b>完了タスクを非表示</b>（「完了も表示」で表示）。左4列は固定、月は横スクロール。「今日」ラインは閲覧日に自動追従。</footer>
+
+<script>
+const RANGE_START="2026-05-01", RANGE_END="2026-12-31";
+// 重要イベント（月→ラベル）
+const MILESTONES={ "6月":{t:"販売開始/検証"}, "7月":{t:"自社ブランド/楽天担当採用",key:true}, "8月":{t:"商品10個登録"}, "9月":{t:"スーパーSALE"}, "10月":{t:"運用移管",key:true}, "12月":{t:"売上目標"} };
+const DATA = [
+ {s:"1. 出店・基盤構築（完了）", t:[
+   {n:"楽天「がんばれ!プラン」契約", o:"社長", a:"2026-04-01", b:"2026-04-30", d:true},
+   {n:"適格請求書発行事業者 登録", o:"社長", a:"2026-04-01", b:"2026-04-30", d:true},
+   {n:"RSL（物流代行）契約・倉庫運用設計", o:"社長/物流", a:"2026-05-01", b:"2026-06-05", d:true},
+   {n:"受注自動連携システム導入", o:"社長", a:"2026-05-01", b:"2026-06-05", d:true},
+   {n:"チェキ複数セット 商品登録", o:"社長", a:"2026-05-20", b:"2026-06-08", d:true},
+   {n:"店舗ページ・商品ページ制作（AI画像）", o:"社長/AI", a:"2026-05-20", b:"2026-06-09", d:true},
+ ]},
+ {s:"2. チェキ販売 検証（価格実験・現在地）", t:[
+   {n:"RPP広告 出稿・販売開始（6/10）", o:"社長", a:"2026-06-10", b:"2026-06-10", d:true},
+   {n:"初動2週間：反応検証", o:"社長", a:"2026-06-10", b:"2026-06-23", d:true},
+   {n:"価格調整", o:"社長", a:"2026-06-23", b:"2026-06-23", d:true},
+   {n:"売れる価格の探索", o:"社長", a:"2026-06-24", b:"2026-07-12"},
+   {n:"RPP広告 運用・クリック/CVR分析", o:"社長", a:"2026-06-10", b:"2026-07-31"},
+   {n:"RPP広告の反応検証（継続）", o:"社長", a:"2026-07-06", b:"2026-07-06", d:true},
+   {n:"売れたら収益改善へ価格調整", o:"社長", a:"2026-07-12", b:"2026-07-31"},
+ ]},
+ {s:"3. 戦略転換：自社ブランド軸へ", t:[
+   {n:"販売手法の検証・見直し", o:"社長", a:"2026-06-24", b:"2026-07-12"},
+   {n:"注力カテゴリの決定", o:"社長", a:"2026-06-28", b:"2026-06-28", d:true},
+   {n:"新規仕入の新カテゴリを楽天投入 検討", o:"社長", a:"2026-09-01", b:"2026-11-30"},
+   {n:"売上目標 設定", o:"社長", a:"2026-07-01", b:"2026-07-31"},
+ ]},
+ {s:"4. ★ 集客改善プラン（商品ラインナップ拡充）", t:[
+   {n:"方針確認：商品ラインナップ拡充（7/7）", o:"社長/コンサル", a:"2026-07-07", b:"2026-07-07", d:true},
+   {n:"商品候補のピックアップ", o:"社長", a:"2026-07-07", b:"2026-07-31"},
+   {n:"商品登録作業", o:"社長/外注", a:"2026-07-15", b:"2026-09-15"},
+   {n:"ポイント変倍・クーポン設定", o:"社長", a:"2026-07-15", b:"2026-08-15"},
+   {n:"RPP広告 設定（新商品）", o:"社長/外注", a:"2026-07-20", b:"2026-09-30"},
+   {n:"効果検証", o:"社長", a:"2026-08-01", b:"2026-10-31"},
+   {n:"流入改善（入札最適化）", o:"社長", a:"2026-09-01", b:"2026-11-30"},
+   {n:"セール参加（流入テスト）", o:"社長/外注", a:"2026-08-15", b:"2026-12-15"},
+   {n:"商品ラインナップ さらに拡充", o:"社長/外注", a:"2026-10-01", b:"2026-12-31"},
+ ]},
+ {s:"5. 商品ラインナップ拡充（自社ブランド軸）", t:[
+   {n:"商品ラインナップを10点規模へ拡充", o:"社長/コンサル", a:"2026-06-20", b:"2026-06-25", d:true},
+   {n:"自社ブランド投入（複数展開）", o:"社長", a:"2026-07-01", b:"2026-09-15"},
+   {n:"インクカテゴリ 追加投入（テスト）", o:"社長", a:"2026-07-01", b:"2026-07-31"},
+   {n:"仕入", o:"社長", a:"2026-07-15", b:"2026-10-31"},
+   {n:"出品登録・ページ制作（10SKUまで）", o:"社長/外注", a:"2026-07-15", b:"2026-10-31"},
+ ]},
+ {s:"6. ページ・画像 制作（継続）", t:[
+   {n:"商品ページ テキスト（情報密度型）", o:"社長/外注", a:"2026-07-01", b:"2026-10-31"},
+   {n:"AI画像 生成・加工（メイン/サブ/バナー）", o:"社長/AI", a:"2026-07-01", b:"2026-10-31"},
+   {n:"ターゲット別LP（女性層 ほか）", o:"社長", a:"2026-08-01", b:"2026-09-30"},
+ ]},
+ {s:"7. 広告・集客", t:[
+   {n:"RPP広告 運用・最適化", o:"社長/外注", a:"2026-06-10", b:"2026-12-31"},
+   {n:"クーポン・送料無料ライン 設計", o:"社長", a:"2026-07-01", b:"2026-07-31"},
+   {n:"レビュー獲得施策（規約準拠）", o:"社長", a:"2026-09-01", b:"2026-10-31"},
+ ]},
+ {s:"8. 物流・受注", t:[
+   {n:"納品・出荷 自動連携", o:"委託先/物流", a:"2026-06-01", b:"2026-12-31"},
+   {n:"在庫補充 自動集計（楽天API）構築", o:"社長/AI", a:"2026-08-01", b:"2026-09-30"},
+ ]},
+ {s:"9. ★ 運用体制の構築（最重要）", t:[
+   {n:"運用体制の整備", o:"社長", a:"2026-06-28", b:"2026-07-15"},
+   {n:"運用担当の募集", o:"社長", a:"2026-06-28", b:"2026-07-20"},
+   {n:"運用担当の採用", o:"社長", a:"2026-07-01", b:"2026-07-31"},
+   {n:"業務マニュアル整備（登録/画像/運用）", o:"社長/外注", a:"2026-07-20", b:"2026-09-15"},
+   {n:"オンボーディング・OJT", o:"社長/外注", a:"2026-08-01", b:"2026-09-30"},
+   {n:"★ 担当へ移管", o:"担当", a:"2026-10-01", b:"2026-12-31"},
+ ]},
+ {s:"10. KPI・セール対応", t:[
+   {n:"売上目標に向けた進捗管理", o:"社長", a:"2026-08-01", b:"2026-12-31"},
+   {n:"楽天セール 初参加テスト（価格自由・セール流入で反応確認）", o:"社長", a:"2026-07-15", b:"2026-08-31"},
+   {n:"楽天スーパーSALE（9月）準備・参加", o:"社長/外注", a:"2026-08-15", b:"2026-09-15"},
+   {n:"セール用 画像準備・申込運用", o:"担当/外注", a:"2026-08-15", b:"2026-12-31"},
+   {n:"年末商戦・12月SALE 参加", o:"担当/外注", a:"2026-11-01", b:"2026-12-15"},
+ ]},
+];
+
+const DAY=86400000;
+const r0=new Date(RANGE_START), r1=new Date(RANGE_END);
+const totalDays=Math.round((r1-r0)/DAY)+1;
+const DAYPX=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--daypx'))||5;
+const TW=totalDays*DAYPX; // タイムライン全幅(px)
+const today=new Date(); today.setHours(0,0,0,0);
+const pos=d=>((new Date(d)-r0)/DAY)*DAYPX;          // px
+const wid=(a,b)=>(((new Date(b)-new Date(a))/DAY)+1)*DAYPX; // px
+const STLABEL={done:"完了",active:"進行中",late:"遅延",todo:"未着手",cancel:"中止"};
+function status(t){ if(t.x)return"cancel"; if(t.d)return"done"; const a=new Date(t.a),b=new Date(t.b);
+  if(b<today)return"late"; if(a<=today&&today<=b)return"active"; return"todo"; }
+function owner(o){ if(!o)return["",""]; const p=o.split("/"); return [p[0], p.slice(1).join("・")]; }
+function pctColor(p){ return p>=100?"var(--done)":p>=50?"var(--active)":p>0?"var(--amber)":"var(--todo)"; }
+
+// 月（left/width px）
+const months=[]; let m=new Date(r0), acc=0;
+while(m<=r1){
+  const next=new Date(m.getFullYear(),m.getMonth()+1,1);
+  const end=next>r1?new Date(r1.getTime()+DAY):next;
+  const w=((end-m)/DAY)*DAYPX;
+  months.push({label:(m.getMonth()+1)+"月", left:acc, w}); acc+=w; m=next;
+}
+
+const g=document.getElementById("gantt");
+function render(showDone){
+  let h="";
+  // グリッド線・今日ライン（タイムライン全幅ぶんのオーバーレイ）
+  h+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}px"></div>`).join("")+'</div>';
+  const tp=pos(today.toISOString().slice(0,10));
+  if(tp>=0&&tp<=TW) h+=`<div class="today" style="left:calc(var(--leftw) + ${tp}px)"></div>`;
+
+  // 固定ヘッダー
+  const monthsHtml=months.map(mo=>`<div class="month" style="width:${mo.w}px">${mo.label}</div>`).join("");
+  const milesHtml=months.map(mo=>{ const mi=MILESTONES[mo.label]; if(!mi)return""; const c=mo.left+mo.w/2;
+    return `<div class="mile ${mi.key?'key':''}" style="left:${c}px"><span class="mflag"></span><b>${mi.t}</b></div>`; }).join("");
+  h+=`<div class="row head">
+    <div class="left">
+      <div class="c name">大項目 / タスク</div>
+      <div class="c center">状態</div>
+      <div class="c center">主担当</div>
+      <div class="c center">パートナー</div>
+    </div>
+    <div class="track" style="width:${TW}px"><div class="months">${monthsHtml}</div><div class="milerow">${milesHtml}</div></div>
+  </div>`;
+
+  let done=0,total=0,late=0;
+  DATA.forEach(sec=>{
+    const a=sec.t.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
+    const b=sec.t.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
+    const act=sec.t.filter(t=>!t.x);
+    const dc=act.filter(t=>t.d).length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
+    // 表示するタスク（完了は既定で隠す。中止は隠さない）
+    const vis=sec.t.filter(t=>showDone || status(t)!=="done");
+    // カウント（KPIは全タスク基準）
+    sec.t.forEach(t=>{ const st=status(t); if(st!=="cancel"){ total++; if(st==="done")done++; if(st==="late")late++; } });
+    if(vis.length===0) return; // 完了のみのセクションは非表示
+    h+=`<div class="row section">
+      <div class="left">
+        <div class="c name">${sec.s}<span class="sub">(${dc}/${tot})</span></div>
+        <div class="c" style="grid-column:2 / 5">
+          <div class="prog"><div class="pbar"><div class="pfill" style="width:${pc}%;background:${pctColor(pc)}"></div></div><span class="pnum" style="color:${pctColor(pc)}">${pc}%</span></div>
+        </div>
+      </div>
+      <div class="track" style="width:${TW}px"><div class="bar group" style="left:${pos(a)}px;width:${wid(a,b)}px"></div></div>
+    </div>`;
+    vis.forEach(t=>{
+      const st=status(t);
+      const [mn,pt]=owner(t.o);
+      const lbl=(st==="done"?"✓ ":st==="late"?"⚠ ":st==="cancel"?"✕ ":"");
+      h+=`<div class="row task${st==="cancel"?" cancel":""}">
+        <div class="left">
+          <div class="c name" title="${t.n}">${t.n}</div>
+          <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
+          <div class="c center">${mn||"–"}</div>
+          <div class="c center"><span class="sub">${pt||"–"}</span></div>
+        </div>
+        <div class="track" style="width:${TW}px"><div class="bar ${st}" style="left:${pos(t.a)}px;width:${wid(t.a,t.b)}px">${lbl}</div></div>
+      </div>`;
+    });
+  });
+  g.innerHTML=h;
+  document.getElementById("kpi").innerHTML=`完了 <b>${done}/${total}</b>　遅延 <b style="color:var(--late)">${late}</b>　軸 <b>自社ブランド</b>　目標 <b>売上目標</b>`;
+}
+
+const chk=document.getElementById("showDone");
+chk.addEventListener("change",()=>render(chk.checked));
+render(false);
+</script>
+</body>
+</html>
