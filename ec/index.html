@@ -103,32 +103,32 @@ const RANGE_START="2026-06-15", RANGE_END="2026-09-15";
 const MILESTONES={ "7月":{t:"素材到着・制作"}, "8月":{t:"EC公開",key:true} };
 const DATA = [
  {s:"1. 素材準備（Makuake流用）", t:[
-   {n:"Makuakeページ文章の共有（URL/テキスト）", o:"一馬", a:"2026-06-28", b:"2026-07-15"},
-   {n:"撮影画像の収集・共有（Drive/フォルダ）", o:"一馬", a:"2026-06-28", b:"2026-07-15"},
-   {n:"リターン構成→EC商品ラインナップ確定", o:"一馬", a:"2026-06-28", b:"2026-07-15"},
+   {n:"Makuakeページ文章の共有（URL/テキスト）", o:"一馬", a:"2026-06-28", b:"2026-07-15", d:true},
+   {n:"撮影画像の収集・共有（Drive/フォルダ）", o:"一馬", a:"2026-06-28", b:"2026-07-15", d:true},
+   {n:"リターン構成→EC商品ラインナップ確定", o:"一馬", a:"2026-06-28", b:"2026-07-15", d:true},
  ]},
  {s:"2. プラットフォーム・環境", t:[
-   {n:"プラットフォーム選定（Shopify/BASE/STORES）", o:"一馬", a:"2026-06-28", b:"2026-07-07"},
-   {n:"ストア作成・アカウント準備", o:"一馬", a:"2026-07-07", b:"2026-07-15"},
-   {n:"ドメイン決定（独自/無料サブドメイン）", o:"一馬", a:"2026-07-07", b:"2026-07-15"},
+   {n:"プラットフォーム選定（Shopify/BASE/STORES）", o:"一馬", a:"2026-06-28", b:"2026-07-07", d:true},
+   {n:"ストア作成・アカウント準備", o:"一馬", a:"2026-07-07", b:"2026-07-15", d:true},
+   {n:"ドメイン決定（独自/無料サブドメイン）", o:"一馬", a:"2026-07-07", b:"2026-07-15", d:true},
  ]},
  {s:"3. 商品・販売情報", t:[
    {n:"商品データ雛形（products.csv）整備", o:"Claude", a:"2026-06-25", b:"2026-06-28", d:true},
-   {n:"価格・送料・在庫の確定", o:"一馬", a:"2026-07-01", b:"2026-07-15"},
-   {n:"products.csv へ実データ反映", o:"Claude/一馬", a:"2026-07-15", b:"2026-07-25"},
+   {n:"価格・送料・在庫の確定", o:"一馬", a:"2026-07-01", b:"2026-07-15", d:true},
+   {n:"products.csv へ実データ反映", o:"Claude/一馬", a:"2026-07-15", b:"2026-07-25", d:true},
  ]},
  {s:"4. ページ制作", t:[
-   {n:"LP本文の組み立て（Makuake流用）", o:"Claude", a:"2026-07-15", b:"2026-07-25"},
-   {n:"商品ページ制作", o:"Claude", a:"2026-07-15", b:"2026-07-28"},
-   {n:"画像配置・モバイル最適化", o:"Claude", a:"2026-07-20", b:"2026-07-31"},
+   {n:"LP本文の組み立て（Makuake流用）", o:"Claude", a:"2026-07-15", b:"2026-07-25", ip:true},
+   {n:"商品ページ制作", o:"Claude", a:"2026-07-15", b:"2026-07-28", ip:true},
+   {n:"画像配置・モバイル最適化", o:"Claude", a:"2026-07-20", b:"2026-07-31", ip:true},
  ]},
  {s:"5. 法定・規約", t:[
    {n:"法定3ページ ドラフト作成", o:"Claude", a:"2026-06-28", b:"2026-06-28", d:true},
-   {n:"特商法の確定情報（所在地/連絡先/送料/発送日数）反映", o:"一馬/Claude", a:"2026-07-08", b:"2026-07-20"},
-   {n:"返品・プライバシーの最終確定", o:"一馬/Claude", a:"2026-07-08", b:"2026-07-20"},
+   {n:"特商法の確定情報（所在地/連絡先/送料/発送日数）反映", o:"一馬/Claude", a:"2026-07-08", b:"2026-07-20", d:true},
+   {n:"返品・プライバシーの最終確定", o:"一馬/Claude", a:"2026-07-08", b:"2026-07-20", d:true},
  ]},
  {s:"6. 決済・自社出荷", t:[
-   {n:"決済設定（標準決済/Shopify Payments申請）", o:"一馬", a:"2026-07-10", b:"2026-07-25"},
+   {n:"決済設定（標準決済/Shopify Payments申請）", o:"一馬", a:"2026-07-10", b:"2026-07-25", d:true},
    {n:"自社出荷オペ整備（梱包・送料表・発送フロー）", o:"一馬", a:"2026-07-10", b:"2026-07-31"},
    {n:"テスト購入→出荷フロー検証", o:"一馬", a:"2026-08-01", b:"2026-08-10"},
  ]},
@@ -149,7 +149,7 @@ const today=new Date(); today.setHours(0,0,0,0);
 const pos=d=>((new Date(d)-r0)/DAY)/totalDays*100;
 const wid=(a,b)=>((new Date(b)-new Date(a))/DAY+1)/totalDays*100;
 const STLABEL={done:"完了",active:"進行中",late:"遅延",todo:"未着手",cancel:"中止"};
-function status(t){ if(t.x)return"cancel"; if(t.d)return"done"; const a=new Date(t.a),b=new Date(t.b);
+function status(t){ if(t.x)return"cancel"; if(t.d)return"done"; if(t.ip)return"active"; const a=new Date(t.a),b=new Date(t.b);
   if(b<today)return"late"; if(a<=today&&today<=b)return"active"; return"todo"; }
 function owner(o){ if(!o)return["",""]; const p=o.split("/"); return [p[0], p.slice(1).join("・")]; }
 function pctColor(p){ return p>=100?"var(--done)":p>=50?"var(--active)":p>0?"var(--amber)":"var(--todo)"; }
