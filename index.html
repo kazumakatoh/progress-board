@@ -16,6 +16,17 @@
   header.top{padding:14px 18px 6px}
   h1{font-size:18px;margin:0 0 4px}
   .meta{font-size:12px;color:var(--sub)}
+  /* 状況サマリー（現状 / 課題 / 改善） */
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 18px 2px}
+  .scap{padding:6px 18px 0;font-size:11px;color:var(--sub)}
+  .card{border:1px solid var(--grid);border-radius:8px;overflow:hidden;background:#fff}
+  .card h2{margin:0;font-size:12.5px;font-weight:700;padding:6px 10px;color:#fff}
+  .card.now h2{background:#1a73e8}
+  .card.issue h2{background:#ea4335}
+  .card.action h2{background:#34a853}
+  .card ul{margin:0;padding:8px 10px 10px 24px;font-size:11.5px;line-height:1.55;color:#3c4043}
+  .card li{margin:1px 0}
+  @media(max-width:720px){.summary{grid-template-columns:1fr}}
   .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 18px;font-size:12px;border-bottom:1px solid var(--grid);background:#fafafa}
   .legend{display:flex;gap:10px;align-items:center}
   .legend span{display:inline-flex;align-items:center;gap:5px}
@@ -82,6 +93,8 @@
   <h1>🗓 進捗ガント</h1>
   <div class="meta">大項目 × タスクの進捗を全体スケジュールで俯瞰。状態・担当・達成率つき</div>
 </header>
+<div class="scap">状況サマリー（現状・課題・改善）｜最終更新 2026-07-13</div>
+<section class="summary" id="summary"></section>
 <div class="toolbar">
   <div class="legend">
     <span><i class="sw" style="background:var(--done)"></i>完了</span>
@@ -101,6 +114,36 @@
 const RANGE_START="2026-05-01", RANGE_END="2026-12-31";
 // 重要イベント（月→ラベル）
 const MILESTONES={ "8月":{t:"サンプル完成"}, "9月":{t:"事前集客"}, "10月":{t:"Makuake公開",key:true}, "11月":{t:"Makuake終了"}, "12月":{t:"配送・一般販売開始"} };
+
+// 状況サマリー（現状 / 課題 / 改善）※更新時はここを書き換える
+const STATUS = {
+  現状: [
+    "ボトル①②サンプル到着待ち（7/20週）。到着→全長確定で撮影・パッケージ・ページが一斉に動く（最大のボトルネック）。",
+    "スティック＝直径9mm・4種8本・単価確定（丸棒260＋レーザー100/本 税抜）。最終サンプルを8/5にフィックス予定。",
+    "パッケージ＝蓋つき箱型・縦式（そそそ路線）で藤井さんと合意。同梱の銘木カード束もA案で確定。",
+    "OKIAMIとまるっと契約。7/2に構成案用の共有資料を送付済／7/19に構成案の提案予定。",
+    "食品衛生検査＝ナラ1種を実施・支払済（結果は7/14頃）。原産地証明（北海道産）も取得手配。",
+  ],
+  課題: [
+    "ボトル未確定が全工程のボトルネック（サイズ→図面・撮影・ページが連動）。",
+    "撮影の企画が未着手（キービジュアル・色変化の事前仕込み・北海道ロケ可否）。",
+    "事前集客の実装（公式LINE運用・LP・広告クリエイティブ）を8月までに準備し9月本番。",
+    "無名ブランドの信頼担保（検査・商標・原産地証明・作り手の顔をページで見せる）。",
+  ],
+  改善: [
+    "ボトル到着後すぐ全長確定→7/27までに中野へ連絡→8/5サンプルフィックス（逆算を厳守）。",
+    "7/19 OKIAMI構成案をチェックリスト5点で評価し、必要写真を撮影指示書と突合。",
+    "撮影はキービジュアルに集中／色変化は撮影7日前に仕込み／中野に工場撮影を依頼済み。",
+    "初動1/3設計で広告効率化（超早割223枠・LINE3,200件・媒体費約128万）。原産地証明でエビデンス強化。",
+  ],
+};
+(function(){
+  const meta=[["now","現状","🔵"],["issue","課題","🔴"],["action","改善","🟢"]];
+  const el=document.getElementById("summary");
+  if(el) el.innerHTML=meta.map(function(m){
+    return `<div class="card ${m[0]}"><h2>${m[2]} ${m[1]}</h2><ul>${STATUS[m[1]].map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+  }).join("");
+})();
 const DATA = [
  {s:"1. サンプル制作", t:[
    {n:"スティックサンプル受領・確認", o:"一馬", a:"2026-06-20", b:"2026-06-25", d:true},
