@@ -9,7 +9,7 @@
     --done:#34a853; --active:#1a73e8; --watch:#f9ab00; --todo:#c7ccd1; --cancel:#9aa0a6;
     --amazon:#ff9900;
     --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
-    --leftw:596px; /* 226+70+300 */
+    --leftw:660px; /* 330+70+260 */
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
@@ -34,12 +34,12 @@
   .note{margin-left:auto;color:var(--sub)}
 
   .wrap{overflow:auto;max-height:calc(100dvh - 60px);position:relative}
-  .gantt{min-width:1040px;position:relative}
+  .gantt{min-width:1160px;position:relative}
 
-  .row{display:grid;grid-template-columns:226px 70px 300px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+  .row{display:grid;grid-template-columns:330px 70px 260px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
   .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
   .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden}
-  .c.name{font-size:12.5px;white-space:nowrap;text-overflow:ellipsis}
+  .c.name{font-size:12.5px;white-space:normal;line-height:1.3;word-break:break-word}
   .row.section .c.name{font-weight:700}
   .row.task .c.name{padding-left:22px;color:#3c4043}
   .c.memo{color:var(--sub);font-size:11px;line-height:1.35;white-space:normal}
@@ -98,6 +98,7 @@
     <span><i class="sw" style="background:var(--watch)"></i>様子見</span>
     <span><i class="sw" style="background:var(--todo)"></i>未着手</span>
   </div>
+  <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="hideDone" checked>完了を隠す</label>
   <div class="note">※「今日」ラインは閲覧日に自動追従。重要イベントは月軸下に表示。</div>
 </div>
 
@@ -107,20 +108,20 @@
 <footer>更新運用：月初の野村さんとの打合せ前に「現状・課題・対策」と各タスクの状態を書き換える</footer>
 
 <script>
-const UPDATED = "2026-07-06";
+const UPDATED = "2026-08-11";
 const RANGE_START = "2026-06-01", RANGE_END = "2027-12-31";
 // 重要イベント（YYYY-MM → ラベル）
-const MILESTONES = { "2026-07":{t:"プライムデー"}, "2026-11":{t:"ブラックフライデー"}, "2027-04":{t:"暑さ対策ブランド販売",key:true}, "2027-07":{t:"2027夏商戦",key:true} };
+const MILESTONES = { "2026-07":{t:"プライムデー"}, "2026-11":{t:"ブラックフライデー"}, "2027-01":{t:"本発注(春節前)",key:true}, "2027-02":{t:"中国春節・工場停止"}, "2027-04":{t:"怪談ブランド公開",key:true}, "2027-05":{t:"本番(暑さ本格化)",key:true}, "2027-07":{t:"2027夏商戦",key:true} };
 
 // 状況サマリー（月初に書き換え）
 const STATUS = {
   現状: [
-    "熱中症：アメは広告が厳しく縮小、ポカリ/アクエリに集中（BtoB=熱中症対策ビジネス好調）。14個入りインゼリーがROAS良好→追加仕入れ様子見。",
-    "ネイチャーメイド：ACOS66%で赤字。リテール(メーカー)広告が競合／バリエーションでレビューが分散し伸び悩み。",
-    "SDカード（トレジャーマーケット）が売れ始め在庫切れ→追加仕入れ中。相乗りも発生。",
+    "【2026夏物・確定】ポカリ/アクエリ/inゼリーは費用対効果が合わず撤退。ZAMSTの冷感ポンチョ/冷感ベスト/冷感アイスバッグは好調で継続。2026年の夏物商品はこれで終了。",
+    "ネイチャーメイド：広告の反応が鈍く売れないため撤退予定（在庫消化後クローズ）。",
+    "SDカード：売れ筋2種の追加仕入れ 完了（相乗りも発生）。",
     "ロイヤルカナン提携カタログが月3〜4百万を安定計上し、下支えになっている。",
     "並行して YADORIGI（自社ブランド）進行中 ※詳細は専用ガント。楽天(イロドリ・ラボ)も別ガント。",
-    "【新規】夏・暑さ対策ブランド（サンシェード/エアコン風よけ）を2027年4月販売で始動する方針。",
+    "【自社ブランド】2027夏へ『怪談シリーズ』（暑さ対策・簡易OEM/中国）を始動。今夏の売れ筋リサーチ＋国内展示会で3〜5SKUを選定→パッケージのみ独自デザイン→4月公開・5月本番。USP＝怪談で“感覚的に涼める”演出（機能同一でも精神的な涼感）。価格帯2000円以上・広告あり。",
   ],
   課題: [
     "転売モデルの限界（プラットフォームの逆風・低い粗利率）。",
@@ -131,63 +132,69 @@ const STATUS = {
   ],
   対策: [
     "粗利率を考慮しても、転売 → 自社ブランドへの移行が合理的。段階的に移行を進める。",
-    "熱中症：アメは悪ASINを停止し良ASINのみ残す。ROAS良い14個入りインゼリーを追加仕入れ様子見。ポカリ/アクエリは気温上昇後＋BtoBで強化。",
-    "ネイチャーメイド：値下げ＋広告見直し。来月動かなければバリエーション解体し売れ筋のみ残す。",
+    "熱中症/冷感：勝ち残った ZAMST冷感3種に集中（継続）。ポカリ/アクエリ/inゼリー・アメは撤退で整理完了。来年に向けた学び＝“冷感ウェア/バッグ系”が有望。",
+    "ネイチャーメイド：改善が見込めず撤退（在庫消化後クローズ）。",
     "外注化：商品登録・画像・運用をココナラ等で外注化。",
-    "【新規】夏・暑さ対策ブランド：中国からサンプル仕入れ→商品開発→Amazon画像制作を、野村さんに相談しながら2027年4月販売へ逆算で進める。",
+    "【怪談ブランド】逆算で進行：今夏リサーチ＋展示会で10月にSKU確定→年内〜1月上旬に本発注（★中国春節2/17前後で工場停止、生産完了を春節前に死守）→3月FBA納品→4月公開→5月本番。景表法/薬機法の“言える/言えない”表現の線引きを最優先で固める。商標は登録リードタイムを見て年内出願。野村さんと連携。",
   ],
 };
 
 // タスク（st: done/active/watch/todo/cancel、memo: 現状メモ）
 const DATA = [
- {s:"1. すぐに始められる新商品", t:[
-   {n:"熱中症対策：ポカリ/アクエリ/アメ 投入", st:"done", memo:"6月投入済", a:"2026-06-01", b:"2026-06-30"},
-   {n:"熱中症：VINE登録", st:"done", a:"2026-06-01", b:"2026-06-30"},
-   {n:"熱中症：広告効果の検証", st:"active", memo:"アメは縮小、ポカリ/アクエリに集中。BtoB(熱中症対策ビジネス)好調", a:"2026-06-15", b:"2026-08-31"},
-   {n:"熱中症：アメ 整理（悪ASIN停止／良ASINのみ残す）", st:"done", memo:"悪ASIN停止・良ASINのみ残す（整理完了）", a:"2026-07-01", b:"2026-07-31"},
-   {n:"熱中症：14個入りインゼリー 追加仕入れ・様子見", st:"done", memo:"追加仕入済み（以降は販売を様子見）", a:"2026-07-01", b:"2026-07-31"},
-   {n:"熱中症：気温上昇後の販売強化（ポカリ/アクエリ）", st:"watch", memo:"猛暑待ち。BtoB広告も強化", a:"2026-07-01", b:"2026-08-31"},
-   {n:"ネイチャーメイド：商品登録", st:"done", a:"2026-05-01", b:"2026-05-31"},
-   {n:"ネイチャーメイド：広告配信", st:"done", a:"2026-05-01", b:"2026-06-30"},
-   {n:"ネイチャーメイド：VINE", st:"done", a:"2026-06-01", b:"2026-06-30"},
-   {n:"ネイチャーメイド：効果検証", st:"active", memo:"ACOS66%・赤字。リテール(メーカー)広告が競合／バリエーションでレビュー分散", a:"2026-06-15", b:"2026-08-31"},
-   {n:"ネイチャーメイド：価格改定（値下げ）", st:"active", memo:"値下げで様子見", a:"2026-07-01", b:"2026-07-31"},
-   {n:"ネイチャーメイド：広告ACOS改善 / 停止判断", st:"active", memo:"改善なければ停止", a:"2026-07-01", b:"2026-08-31"},
-   {n:"ネイチャーメイド：バリエーション解体の検討", st:"watch", memo:"来月動かなければ解体し売れ筋のみ残す（レビュー分散対策）", a:"2026-08-01", b:"2026-09-30"},
+ {s:"1. 2026夏物・新商品（熱中症/冷感）※シーズン終了", t:[
+   {n:"ZAMST 冷感ポンチョ／冷感ベスト／冷感アイスバッグ：継続販売", st:"active", memo:"2026夏の勝ち残り。売れているので継続", a:"2026-06-01", b:"2026-09-30"},
+   {n:"熱中症：ポカリ／アクエリ／inゼリー 投入→撤退", st:"done", memo:"費用対効果が合わず撤退。2026年の夏物商品はこれで終了", a:"2026-06-01", b:"2026-08-31"},
+   {n:"熱中症：アメ 整理（悪ASIN停止）", st:"done", memo:"整理完了", a:"2026-07-01", b:"2026-07-31"},
+   {n:"熱中症：VINE登録・広告効果の検証", st:"done", memo:"検証完了→ポカリ/アクエリ/inゼリーは撤退、ZAMST冷感3種は継続", a:"2026-06-01", b:"2026-08-31"},
+   {n:"ネイチャーメイド：商品登録・広告配信・VINE", st:"done", a:"2026-05-01", b:"2026-06-30"},
+   {n:"ネイチャーメイド：効果検証・価格改定・広告改善", st:"done", memo:"広告の反応が鈍く売れない→撤退予定（在庫消化後クローズ）", a:"2026-06-15", b:"2026-08-31"},
  ]},
- {s:"2. 広告最適化（既存商品）", t:[
-   {n:"主力商品の ACOS/TACOS モニタリング", st:"active", memo:"月次で確認", a:"2026-06-01", b:"2027-12-31"},
-   {n:"赤字商品の広告是正", st:"active", a:"2026-07-01", b:"2026-12-31"},
-   {n:"入札・キーワード最適化", st:"active", a:"2026-06-01", b:"2027-12-31"},
+ {s:"2. 広告最適化（既存商品）※一巡完了", t:[
+   {n:"主力商品の ACOS/TACOS モニタリング", st:"done", memo:"一巡完了（以降は日常運用）", a:"2026-06-01", b:"2026-08-31"},
+   {n:"赤字商品の広告是正", st:"done", memo:"是正・撤退判断まで完了", a:"2026-07-01", b:"2026-08-31"},
+   {n:"入札・キーワード最適化", st:"done", a:"2026-06-01", b:"2026-08-31"},
  ]},
- {s:"3. 簡易自社ブランド（怪談シリーズ）※2027夏商戦ターゲット・現状停止", t:[
-   {n:"商品リサーチ", st:"todo", memo:"2027夏へ向け着手予定", a:"2027-01-01", b:"2027-02-28"},
-   {n:"展示会リサーチ", st:"todo", a:"2027-01-01", b:"2027-02-28"},
-   {n:"中国工場サンプル取得", st:"todo", a:"2027-02-01", b:"2027-03-31"},
-   {n:"ブランド構築（怪談シリーズ）", st:"todo", a:"2027-02-01", b:"2027-03-31"},
-   {n:"原価・利益設計（値決め）", st:"todo", a:"2027-03-01", b:"2027-03-31"},
-   {n:"写真撮影", st:"todo", a:"2027-03-01", b:"2027-04-30"},
-   {n:"デザイン制作", st:"todo", a:"2027-03-01", b:"2027-04-30"},
-   {n:"パッケージ制作", st:"todo", a:"2027-04-01", b:"2027-05-31"},
-   {n:"ページ制作", st:"todo", a:"2027-04-01", b:"2027-05-31"},
-   {n:"VINE / 初期レビュー獲得", st:"todo", a:"2027-05-01", b:"2027-06-30"},
-   {n:"Amazon販売", st:"todo", a:"2027-05-01", b:"2027-08-31"},
-   {n:"Shopifyで広告販売の検証", st:"todo", a:"2027-06-01", b:"2027-08-31"},
+ {s:"3. 自社ブランド「怪談シリーズ」①リサーチ・ブランド設計・法務（暑さ対策・簡易OEM）", t:[
+   {n:"商品リサーチ（今夏Amazon実売：売れ筋/価格帯/競合）", st:"active", memo:"今夏データが今しか取れない。野村さん(Amence)と／2000円以上で成立する商材に絞る", a:"2026-08-01", b:"2026-09-30"},
+   {n:"国内展示会リサーチ（仕入・簡易OEM候補の発掘）", st:"todo", memo:"東京インターナショナル・ギフトショー(9月/2月)、東京雑貨EXPO、日用品/生活雑貨系の展示会をリスト化→来場", a:"2026-08-15", b:"2026-10-31"},
+   {n:"ラインナップ3〜5SKU 確定", st:"todo", memo:"怪談が映える商材で選定（ネッククーラー/ハンディファン/冷感タオル/タンブラー/サンシェード等が候補）", a:"2026-10-01", b:"2026-10-31"},
+   {n:"ブランド軸＝怪談（背筋が凍る）確定", st:"done", memo:"8/11 怪談を本命で確定", a:"2026-08-01", b:"2026-08-11"},
+   {n:"オリジナル怪談の世界観・物語/キャラ創作（著作権回避）", st:"todo", memo:"既存怪談作品の権利回避＝伝承ベース＋独自解釈", a:"2026-09-01", b:"2026-10-31"},
+   {n:"ブランド名・ロゴ・トーン&マナー確定", st:"todo", a:"2026-10-01", b:"2026-11-15"},
+   {n:"商品名（ネーミング）確定 ※怖さ×涼しさ", st:"todo", memo:"USPの肝。語感と検索性を両立", a:"2026-10-15", b:"2026-11-30"},
+   {n:"USPコピー・演出設計（精神的な涼感）", st:"todo", memo:"機能は同一でも“感覚的に涼めそう”と思わせる演出", a:"2026-11-01", b:"2026-12-15"},
+   {n:"景表法/薬機法チェック（言える/言えない表現の一覧化）", st:"todo", memo:"★最優先。冷却効果の物理主張はNG、エンタメ/演出として設計", a:"2026-09-01", b:"2026-10-15"},
+   {n:"商標出願（早期審査も検討）", st:"todo", memo:"Amazonブランド登録に登録商標が必要。登録まで数ヶ月→年内出願", a:"2026-11-01", b:"2026-12-15"},
+   {n:"製品規制の確認（PSE/電池PSE/技適/雑貨区分）", st:"todo", memo:"ハンディファン等の電気製品を選ぶ場合", a:"2026-10-01", b:"2026-11-30"},
  ]},
- {s:"4. 夏・暑さ対策ブランド（新規／サンシェード・エアコン風よけ）※2027年4月販売開始目標・野村さん相談", t:[
-   {n:"商品リサーチ・選定（サンシェード／エアコン風よけの2点）", st:"todo", memo:"暑さ対策ブランドとして展開", a:"2026-11-01", b:"2026-12-31"},
-   {n:"中国からサンプル仕入れ", st:"todo", memo:"アリババ等・低工数の簡易ブランド", a:"2026-12-01", b:"2027-01-31"},
-   {n:"商品開発（仕様確定）", st:"todo", a:"2027-01-01", b:"2027-02-28"},
-   {n:"原価・利益設計（値決め）", st:"todo", a:"2027-02-01", b:"2027-02-28"},
-   {n:"Amazon画像制作", st:"todo", a:"2027-02-01", b:"2027-03-31"},
-   {n:"商品登録・ページ作成", st:"todo", a:"2027-03-01", b:"2027-03-31"},
-   {n:"VINE / 初期レビュー獲得", st:"todo", a:"2027-03-01", b:"2027-04-30"},
-   {n:"Amazon販売開始（2027年4月）", st:"todo", memo:"夏商戦へ向け早出し。楽天へも展開検討", a:"2027-04-01", b:"2027-08-31"},
+ {s:"4. 自社ブランド「怪談シリーズ」②調達・パッケージ制作（中国OEM）", t:[
+   {n:"中国工場 選定・見積（簡易OEM＝製品はそのまま）", st:"todo", memo:"アリババ等。製品改良はせずパッケージのみ独自", a:"2026-10-01", b:"2026-11-15"},
+   {n:"サンプル取得・実物確認（品質/梱包）", st:"todo", a:"2026-11-01", b:"2026-12-15"},
+   {n:"MOQ/単価/リードタイム/パッケージ仕様 確定", st:"todo", a:"2026-11-15", b:"2026-12-31"},
+   {n:"パッケージ企画・オリジナルデザイン制作", st:"todo", memo:"怪談の開封体験。同梱の怪談カード/冊子も企画", a:"2026-11-01", b:"2026-12-31"},
+   {n:"パッケージ入稿データ確定（本発注と連動）", st:"todo", a:"2026-12-15", b:"2027-01-10"},
+   {n:"本発注（★春節前に生産完了を死守）", st:"todo", memo:"★クリティカル。2027春節2/17前後で工場2〜3週停止", a:"2026-12-15", b:"2027-01-10"},
+   {n:"生産進捗管理・出荷前検品", st:"todo", a:"2027-01-10", b:"2027-02-20"},
+   {n:"同梱物（怪談カード/ストーリー冊子）制作", st:"todo", a:"2026-12-01", b:"2027-02-28"},
+   {n:"輸送・通関（中国→日本）", st:"todo", memo:"春節明けの物流混雑を織り込む", a:"2027-02-01", b:"2027-03-10"},
+   {n:"FBA納品・入庫（★4月公開前に完了）", st:"todo", a:"2027-03-01", b:"2027-03-31"},
  ]},
- {s:"5. その他", t:[
+ {s:"5. 自社ブランド「怪談シリーズ」③Amazon販売準備・公開（4月公開/5月本番）", t:[
+   {n:"Amazonブランド登録（商標登録後）", st:"todo", a:"2027-01-15", b:"2027-02-28"},
+   {n:"原価・利益設計（2000円以上の妥当性検証）", st:"todo", memo:"仕入原価×FBA手数料×広告費で利益確認", a:"2027-02-01", b:"2027-02-28"},
+   {n:"リスティング作成（タイトル/A+/画像/SEO）", st:"todo", memo:"怪談ワード＋実需の暑さ対策ワードの両取り", a:"2027-02-01", b:"2027-03-15"},
+   {n:"商品撮影・世界観ビジュアル（怖い×涼しい）", st:"todo", a:"2027-02-01", b:"2027-03-15"},
+   {n:"広告/SNS動画クリエイティブ制作", st:"todo", a:"2027-03-01", b:"2027-03-31"},
+   {n:"VINE / 初期レビュー獲得", st:"todo", a:"2027-03-15", b:"2027-04-30"},
+   {n:"広告設計・事前告知（SNSで話題化）", st:"todo", memo:"Amazonスポンサー＋外部SNS。目標CPA設計", a:"2027-03-01", b:"2027-03-31"},
+   {n:"4月 公開＝広告始動", st:"todo", memo:"公開", a:"2027-04-01", b:"2027-04-30"},
+   {n:"5月〜 本番（広告フル・ランキング狙い）", st:"todo", memo:"暑さ本格化", a:"2027-05-01", b:"2027-08-31"},
+   {n:"Shopify/外部広告での販売検証", st:"todo", memo:"楽天への展開も検討", a:"2027-06-01", b:"2027-08-31"},
+ ]},
+ {s:"6. その他", t:[
    {n:"外注化の仕組み（登録・画像・運用）", st:"active", memo:"ココナラで店長/運用者を探す", a:"2026-07-01", b:"2026-12-31"},
    {n:"2つ目のアカウント登録", st:"todo", a:"2026-08-01", b:"2026-09-30"},
-   {n:"SDカード：売れ筋2種 追加仕入れ", st:"active", memo:"7/6 売れ始め・在庫切れ→追加。相乗り発生", a:"2026-07-01", b:"2026-07-31"},
+   {n:"SDカード：売れ筋2種 追加仕入れ", st:"done", memo:"追加仕入れ完了（相乗りも発生）", a:"2026-07-01", b:"2026-08-31"},
  ]},
 ];
 
@@ -220,46 +227,56 @@ while(mcur<=r1){
 }
 
 const g=document.getElementById("gantt");
-let h="";
-h+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}%"></div>`).join("")+'</div>';
-const tp=pos(today.toISOString().slice(0,10));
-if(tp>=0&&tp<=100) h+=`<div class="today" style="left:calc(var(--leftw) + ${tp/100} * (100% - var(--leftw)))"></div>`;
+const hideBox=document.getElementById("hideDone");
 
 const monthsHtml=months.map(mo=>`<div class="month" style="width:${mo.w}%">${mo.yr?`<div class="yr">${mo.yr}</div>`:""}${mo.label}</div>`).join("");
 const milesHtml=months.map(mo=>{ const mi=MILESTONES[mo.ym]; if(!mi)return""; const c=mo.left+mo.w/2;
   return `<div class="mile ${mi.key?'key':''}" style="left:${c}%"><span class="mflag"></span><b>${mi.t}</b></div>`; }).join("");
-h+=`<div class="row head">
-  <div class="c name">大項目 / タスク</div>
-  <div class="c center">状態</div>
-  <div class="c">現状メモ</div>
-  <div class="track"><div class="months">${monthsHtml}</div><div class="milerow">${milesHtml}</div></div>
-</div>`;
 
-DATA.forEach(sec=>{
-  const a=sec.t.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, sec.t[0].a);
-  const b=sec.t.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, sec.t[0].b);
-  const act=sec.t.filter(t=>t.st!=="cancel");
-  const dc=act.filter(t=>t.st==="done").length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
-  const pcColor=pc>=100?"var(--done)":pc>=50?"var(--active)":pc>0?"var(--watch)":"var(--todo)";
-  h+=`<div class="row section">
-    <div class="c name">${sec.s}<span class="sub">(${dc}/${tot})</span></div>
-    <div class="c" style="grid-column:span 2">
-      <div class="prog"><div class="pbar"><div class="pfill" style="width:${pc}%;background:${pcColor}"></div></div><span class="pnum" style="color:${pcColor}">${pc}%</span></div>
-    </div>
-    <div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div>
+function renderGantt(){
+  const hideDone = hideBox && hideBox.checked;
+  let h="";
+  h+='<div class="gridlines">'+months.map(mo=>`<div class="gl" style="width:${mo.w}%"></div>`).join("")+'</div>';
+  const tp=pos(today.toISOString().slice(0,10));
+  if(tp>=0&&tp<=100) h+=`<div class="today" style="left:calc(var(--leftw) + ${tp/100} * (100% - var(--leftw)))"></div>`;
+  h+=`<div class="row head">
+    <div class="c name">大項目 / タスク</div>
+    <div class="c center">状態</div>
+    <div class="c">現状メモ</div>
+    <div class="track"><div class="months">${monthsHtml}</div><div class="milerow">${milesHtml}</div></div>
   </div>`;
-  sec.t.forEach(t=>{
-    const st=t.st||"todo";
-    const lbl=(st==="done"?"✓ ":st==="watch"?"◔ ":"");
-    h+=`<div class="row task${st==="cancel"?" cancel":""}">
-      <div class="c name" title="${t.n}">${t.n}</div>
-      <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
-      <div class="c memo">${t.memo||""}</div>
-      <div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${lbl}</div></div>
+
+  DATA.forEach(sec=>{
+    const act=sec.t.filter(t=>t.st!=="cancel");
+    const dc=act.filter(t=>t.st==="done").length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
+    const pcColor=pc>=100?"var(--done)":pc>=50?"var(--active)":pc>0?"var(--watch)":"var(--todo)";
+    // 表示タスク（完了を隠す場合は done を除外）
+    const vis=hideDone?sec.t.filter(t=>t.st!=="done"):sec.t;
+    if(vis.length===0) return; // 全部完了の大項目は非表示
+    const a=vis.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, vis[0].a);
+    const b=vis.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, vis[0].b);
+    h+=`<div class="row section">
+      <div class="c name">${sec.s}<span class="sub">(${dc}/${tot})</span></div>
+      <div class="c" style="grid-column:span 2">
+        <div class="prog"><div class="pbar"><div class="pfill" style="width:${pc}%;background:${pcColor}"></div></div><span class="pnum" style="color:${pcColor}">${pc}%</span></div>
+      </div>
+      <div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div>
     </div>`;
+    vis.forEach(t=>{
+      const st=t.st||"todo";
+      const lbl=(st==="done"?"✓ ":st==="watch"?"◔ ":"");
+      h+=`<div class="row task${st==="cancel"?" cancel":""}">
+        <div class="c name" title="${t.n}">${t.n}</div>
+        <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
+        <div class="c memo">${t.memo||""}</div>
+        <div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${lbl}</div></div>
+      </div>`;
+    });
   });
-});
-g.innerHTML=h;
+  g.innerHTML=h;
+}
+if(hideBox) hideBox.addEventListener("change", renderGantt);
+renderGantt();
 </script>
 </body>
 </html>
