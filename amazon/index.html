@@ -63,8 +63,16 @@
   .bar.watch{background:var(--watch)} .bar.todo{background:var(--todo);color:#5f6368}
   .bar.late{background:var(--late)}
   .bar.cancel{background:#dadce0;color:#80868b}
-  .stsel{font-size:10.5px;border:1px solid var(--grid);border-radius:6px;padding:1px 3px;background:#fff;color:#3c4043;max-width:90px;cursor:pointer}
-  .stsel.done{color:var(--done)} .stsel.active{color:var(--active)} .stsel.watch{color:#b06000} .stsel.late{color:var(--late)} .stsel.cancel{color:var(--cancel)}
+  /* 状態＝色付きピル（バッジ）。プルダウンで変更可 */
+  .stsel{font-size:10.5px;font-weight:700;color:#fff;border:none;border-radius:11px;
+    padding:2px 17px 2px 9px;cursor:pointer;line-height:1.4;
+    -webkit-appearance:none;-moz-appearance:none;appearance:none;
+    background-repeat:no-repeat;background-position:right 6px center;background-size:8px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'><path d='M0 2l4 4 4-4' fill='none' stroke='white' stroke-width='1.5'/></svg>")}
+  .stsel.todo{background-color:#9aa0a6} .stsel.active{background-color:var(--active)}
+  .stsel.done{background-color:var(--done)} .stsel.watch{background-color:var(--watch)}
+  .stsel.cancel{background-color:var(--cancel)} .stsel.late{background-color:var(--late)}
+  .stsel option{background:#fff;color:#202124;font-weight:600}
   .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.5}
 
   .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
