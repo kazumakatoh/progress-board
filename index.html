@@ -9,7 +9,7 @@
     --done:#34a853; --active:#1a73e8; --watch:#f9ab00; --late:#ea4335; --todo:#c7ccd1; --cancel:#9aa0a6;
     --brand:#8a5a2b;
     --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
-    --leftw:750px; /* 300+70+260+120 */
+    --leftw:780px; /* 300+100+260+120 */
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
@@ -38,12 +38,12 @@
 
   .wrap{overflow:auto;max-height:calc(100dvh - 60px);position:relative}
   .gantt{min-width:1260px;position:relative}
-  body.hidedetail{--leftw:490px}
+  body.hidedetail{--leftw:520px}
   body.hidedetail .gantt{min-width:1000px}
   body.hidedetail .c.memo{display:none}
 
-  .row{display:grid;grid-template-columns:300px 70px 260px 120px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
-  body.hidedetail .row{grid-template-columns:300px 70px 120px 1fr}
+  .row{display:grid;grid-template-columns:300px 100px 260px 120px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+  body.hidedetail .row{grid-template-columns:300px 100px 120px 1fr}
   .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
   .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden}
   .c.name{font-size:12.5px;white-space:normal;line-height:1.3;word-break:break-word}
@@ -75,6 +75,16 @@
   .bar.cancel{background:#dadce0;color:#80868b}
   .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.5}
   .bar.over{box-shadow:0 0 0 2px var(--late) inset}
+  /* 状態＝色付きピル（バッジ）。プルダウンで手動変更可 */
+  .stsel{font-size:10.5px;font-weight:700;color:#fff;border:none;border-radius:11px;
+    padding:2px 17px 2px 9px;cursor:pointer;line-height:1.4;
+    -webkit-appearance:none;-moz-appearance:none;appearance:none;
+    background-repeat:no-repeat;background-position:right 6px center;background-size:8px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'><path d='M0 2l4 4 4-4' fill='none' stroke='white' stroke-width='1.5'/></svg>")}
+  .stsel.todo{background-color:#9aa0a6} .stsel.active{background-color:var(--active)}
+  .stsel.done{background-color:var(--done)} .stsel.watch{background-color:var(--watch)}
+  .stsel.cancel{background-color:var(--cancel);text-decoration:line-through} .stsel.late{background-color:var(--late)}
+  .stsel option{background:#fff;color:#202124;font-weight:600;text-decoration:none}
 
   .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
   .pill.done{background:var(--done)} .pill.active{background:var(--active)}
@@ -98,7 +108,7 @@
 <body>
 <header class="top">
   <h1>🗓 進捗ガント</h1>
-  <div class="meta">大項目 × タスクの進捗を全体スケジュールで俯瞰。状態は手動で設定（<code>st</code>）　<b>最終更新：<span id="upd"></span></b></div>
+  <div class="meta">大項目 × タスクの進捗を全体スケジュールで俯瞰。状態は手動設定（プルダウン／<code>st</code>）　<b>最終更新：<span id="upd"></span></b></div>
 </header>
 
 <!-- 状況サマリー -->
@@ -111,17 +121,19 @@
     <span><i class="sw" style="background:var(--watch)"></i>様子見</span>
     <span><i class="sw" style="background:var(--late)"></i>遅延</span>
     <span><i class="sw" style="background:var(--todo)"></i>未着手</span>
+    <span><i class="sw" style="background:#dadce0"></i>中止</span>
   </div>
-  <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="hideDone" checked>完了を隠す</label>
+  <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="hideDone" checked>完了・中止を隠す</label>
   <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="toggleDetail" checked>現状メモを表示</label>
+  <button id="resetSt" type="button" style="font-size:11px;padding:2px 8px;border:1px solid var(--grid);border-radius:6px;background:#fff;cursor:pointer">状態の手動変更をリセット</button>
   <div class="kpi" id="kpi"></div>
-  <div class="note">※状態は日付から自動判定せず、手動で設定した値を表示。期日を過ぎても未完了のタスクはバーに赤枠＋⚠。「今日」ラインは閲覧日に自動追従。重要イベントは月軸下に表示。</div>
+  <div class="note">※状態は日付から自動判定しない。プルダウンで手動変更可（この端末のブラウザに保存。リポジトリ側の正は <code>st</code>）。期日を過ぎても未完了のタスクはバーに赤枠＋⚠。「今日」ラインは閲覧日に自動追従。</div>
 </div>
 
 <div class="wrap">
   <div class="gantt" id="gantt"></div>
 </div>
-<footer>更新運用：社長の「◯◯完了／進行中／様子見」の指示で <code>st</code> を書き換える（done / active / watch / late / todo / cancel）</footer>
+<footer>更新運用：画面のプルダウンで状態を変えると閲覧端末に保存（共有ボードには反映されない）。正式な更新は社長の「◯◯完了／進行中／様子見」の指示で <code>st</code> を書き換える（todo / active / done / watch / cancel / late）</footer>
 
 <script>
 const UPDATED = "2026-09-07";
@@ -323,8 +335,17 @@ const totalDays=Math.round((r1-r0)/DAY)+1;
 const today=new Date(); today.setHours(0,0,0,0);
 const pos=d=>((new Date(d)-r0)/DAY)/totalDays*100;
 const wid=(a,b)=>((new Date(b)-new Date(a))/DAY+1)/totalDays*100;
-const STLABEL={done:"完了",active:"進行中",watch:"様子見",late:"遅延",todo:"未着手",cancel:"中止"};
-const stOf=t=>STLABEL[t.st]?t.st:"todo";
+const STLABEL={todo:"未着手",active:"進行中",done:"完了",watch:"様子見",cancel:"中止",late:"遅延"};
+const ST_ORDER=["todo","active","done","watch","cancel","late"];
+// 状態の手動変更（この端末のブラウザに保存。リポジトリ側=正には反映されない）
+const OVR_KEY="yadorigi_gantt_status_ovr_v1";
+function loadOvr(){try{return JSON.parse(localStorage.getItem(OVR_KEY)||"{}")}catch(e){return{}}}
+function saveOvr(o){try{localStorage.setItem(OVR_KEY,JSON.stringify(o))}catch(e){}}
+let STOVR=loadOvr();
+function taskKey(sec,n){return sec+"||"+n;}
+function escAttr(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+let curSec="";
+const stOf=t=>{ const o=STOVR[taskKey(curSec,t.n)]; if(o&&STLABEL[o])return o; return STLABEL[t.st]?t.st:"todo"; };
 function owner(o){ if(!o)return["",""]; const p=o.split("/"); return [p[0], p.slice(1).join("・")]; }
 function pctColor(p){ return p>=100?"var(--done)":p>=50?"var(--active)":p>0?"var(--watch)":"var(--todo)"; }
 
@@ -371,12 +392,13 @@ function renderGantt(){
 
   let done=0,total=0,late=0,over=0;
   DATA.forEach(sec=>{
+    curSec=sec.s;
     const act=sec.t.filter(t=>stOf(t)!=="cancel");
     const dc=act.filter(t=>stOf(t)==="done").length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
     act.forEach(t=>{ const st=stOf(t); total++; if(st==="done")done++; if(st==="late")late++;
       if(st!=="done" && new Date(t.b)<today) over++; });
-    const vis=hideDone?sec.t.filter(t=>stOf(t)!=="done"):sec.t;
-    if(vis.length===0) return; // 全部完了の大項目は非表示
+    const vis=hideDone?sec.t.filter(t=>{const s=stOf(t);return s!=="done"&&s!=="cancel";}):sec.t;
+    if(vis.length===0) return; // 全部が完了/中止の大項目は非表示
     const a=vis.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, vis[0].a);
     const b=vis.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, vis[0].b);
     h+=`<div class="row section">
@@ -391,9 +413,11 @@ function renderGantt(){
       const isOver = st!=="done" && st!=="cancel" && new Date(t.b)<today;
       const [mn,pt]=owner(t.o);
       const lbl=(st==="done"?"✓ ":st==="late"?"⚠ ":st==="watch"?"◔ ":st==="cancel"?"✕ ":isOver?"⚠ ":"");
+      const opts=ST_ORDER.map(o=>`<option value="${o}"${o===st?" selected":""}>${STLABEL[o]}</option>`).join("");
+      const sel=`<select class="stsel ${st}" data-key="${escAttr(taskKey(sec.s,t.n))}" title="状態を変更">${opts}</select>`;
       h+=`<div class="row task${st==="cancel"?" cancel":""}">
-        <div class="c name" title="${t.m||t.n}">${t.n}</div>
-        <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
+        <div class="c name" title="${escAttr(t.m||t.n)}">${t.n}</div>
+        <div class="c center">${sel}</div>
         <div class="c memo">${t.m||""}</div>
         <div class="c own">${mn||"–"}${pt?`<span class="sub">${pt}</span>`:""}</div>
         <div class="track"><div class="bar ${st}${isOver?" over":""}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${lbl}</div></div>
@@ -401,9 +425,20 @@ function renderGantt(){
     });
   });
   g.innerHTML=h;
+  // 状態プルダウンの変更を保存して再描画
+  g.querySelectorAll(".stsel").forEach(sel=>sel.addEventListener("change",function(){
+    const k=this.getAttribute("data-key"), v=this.value;
+    if(v) STOVR[k]=v; saveOvr(STOVR); renderGantt();
+  }));
   document.getElementById("kpi").innerHTML=`完了 <b>${done}/${total}</b>　遅延 <b style="color:var(--late)">${late}</b>　期日超過 <b style="color:var(--late)">${over}</b>　公開目標 <b>10/23</b>`;
 }
 if(hideBox) hideBox.addEventListener("change", renderGantt);
+const resetBtn=document.getElementById("resetSt");
+if(resetBtn) resetBtn.addEventListener("click",function(){
+  if(Object.keys(STOVR).length && confirm("この端末で手動変更した状態をすべて元に戻します。よろしいですか？")){
+    STOVR={}; saveOvr(STOVR); renderGantt();
+  }
+});
 document.getElementById("toggleDetail").addEventListener("change",function(e){
   document.body.classList.toggle("hidedetail", !e.target.checked);
 });
