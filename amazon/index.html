@@ -6,10 +6,10 @@
 <title>Amazon 進捗チャート</title>
 <style>
   :root{
-    --done:#34a853; --active:#1a73e8; --watch:#f9ab00; --todo:#c7ccd1; --cancel:#9aa0a6;
+    --done:#34a853; --active:#1a73e8; --watch:#f9ab00; --todo:#c7ccd1; --cancel:#9aa0a6; --late:#ea4335;
     --amazon:#ff9900;
     --grid:#e8eaed; --grid2:#f3f4f6; --ink:#202124; --sub:#5f6368; --today:#ea4335;
-    --leftw:660px; /* 330+70+260 */
+    --leftw:660px; /* 300+100+260 */
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:#fff}
@@ -36,7 +36,7 @@
   .wrap{overflow:auto;max-height:calc(100dvh - 60px);position:relative}
   .gantt{min-width:1160px;position:relative}
 
-  .row{display:grid;grid-template-columns:330px 70px 260px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
+  .row{display:grid;grid-template-columns:300px 100px 260px 1fr;border-bottom:1px solid var(--grid2);min-height:30px}
   .row.section{background:#f5f7fb;border-bottom:1px solid var(--grid)}
   .c{padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;border-right:1px solid var(--grid);overflow:hidden}
   .c.name{font-size:12.5px;white-space:normal;line-height:1.3;word-break:break-word}
@@ -61,7 +61,10 @@
   .bar{position:absolute;top:5px;height:18px;border-radius:5px;display:flex;align-items:center;padding:0 6px;color:#fff;font-size:10.5px;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
   .bar.done{background:var(--done)} .bar.active{background:var(--active)}
   .bar.watch{background:var(--watch)} .bar.todo{background:var(--todo);color:#5f6368}
+  .bar.late{background:var(--late)}
   .bar.cancel{background:#dadce0;color:#80868b}
+  .stsel{font-size:10.5px;border:1px solid var(--grid);border-radius:6px;padding:1px 3px;background:#fff;color:#3c4043;max-width:90px;cursor:pointer}
+  .stsel.done{color:var(--done)} .stsel.active{color:var(--active)} .stsel.watch{color:#b06000} .stsel.late{color:var(--late)} .stsel.cancel{color:var(--cancel)}
   .bar.group{background:#9aa0a6;height:8px;top:11px;border-radius:4px;opacity:.5}
 
   .pill{display:inline-block;padding:1px 8px;border-radius:11px;font-size:10.5px;font-weight:700;color:#fff;white-space:nowrap}
@@ -97,9 +100,12 @@
     <span><i class="sw" style="background:var(--active)"></i>進行中</span>
     <span><i class="sw" style="background:var(--watch)"></i>様子見</span>
     <span><i class="sw" style="background:var(--todo)"></i>未着手</span>
+    <span><i class="sw" style="background:var(--late)"></i>遅延</span>
+    <span><i class="sw" style="background:#dadce0"></i>中止</span>
   </div>
-  <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="hideDone" checked>完了を隠す</label>
-  <div class="note">※「今日」ラインは閲覧日に自動追従。重要イベントは月軸下に表示。</div>
+  <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="hideDone" checked>完了・中止を隠す</label>
+  <button id="resetSt" type="button" style="font-size:11px;padding:2px 8px;border:1px solid var(--grid);border-radius:6px;background:#fff;cursor:pointer">状態の手動変更をリセット</button>
+  <div class="note">※状態はプルダウンで手動変更可（この端末に保存）。「今日」ラインは閲覧日に自動追従。</div>
 </div>
 
 <div class="wrap">
@@ -144,7 +150,7 @@ const STATUS = {
 // タスク（st: done/active/watch/todo/cancel、memo: 現状メモ）
 const DATA = [
  {s:"1. 2026夏物・新商品（熱中症/冷感）※シーズン終了", t:[
-   {n:"ZAMST 冷感ポンチョ／冷感ベスト／冷感アイスバッグ：継続販売", st:"active", memo:"2026夏の勝ち残り。売れているので継続", a:"2026-06-01", b:"2026-09-30"},
+   {n:"ZAMST 冷感ポンチョ／冷感ベスト／冷感アイスバッグ：継続販売", st:"done", memo:"2026夏の勝ち残り。シーズン終了（アイスバッグは比較的耐えた）", a:"2026-06-01", b:"2026-09-30"},
    {n:"熱中症：ポカリ／アクエリ／inゼリー 投入→撤退", st:"done", memo:"費用対効果が合わず撤退。2026年の夏物商品はこれで終了", a:"2026-06-01", b:"2026-08-31"},
    {n:"熱中症：アメ 整理（悪ASIN停止）", st:"done", memo:"整理完了", a:"2026-07-01", b:"2026-07-31"},
    {n:"熱中症：VINE登録・広告効果の検証", st:"done", memo:"検証完了→ポカリ/アクエリ/inゼリーは撤退、ZAMST冷感3種は継続", a:"2026-06-01", b:"2026-08-31"},
@@ -156,7 +162,7 @@ const DATA = [
    {n:"赤字商品の広告是正", st:"done", memo:"是正・撤退判断まで完了", a:"2026-07-01", b:"2026-08-31"},
    {n:"入札・キーワード最適化", st:"done", a:"2026-06-01", b:"2026-08-31"},
  ]},
- {s:"3. 自社ブランド「動物キャラ夏対策（アニボ）」①リサーチ・ブランド設計・法務", t:[
+ {s:"3. 暑さ対策ブランド①リサーチ・ブランド設計・法務", t:[
    {n:"旧案：怪談/妖怪ブランド → 中止", st:"cancel", memo:"9/7 野村さん打合せで中止。嗜好が限定的・パッケージ嫌悪リスク。動物キャラへ転換", a:"2026-08-01", b:"2026-09-07"},
    {n:"商品リサーチ（今夏Amazon実売：売れ筋/価格帯/競合）", st:"active", memo:"野村さん(Amence)と。動物キャラで映える冷感定番(ポンチョ/タオル等)に絞る／価格競争が厳しいので差別化前提", a:"2026-08-01", b:"2026-09-30"},
    {n:"国内展示会リサーチ→夏対策専門工場を発見（東京ビッグサイト）", st:"done", memo:"仕入安・MOQ100〜300で柔軟・ラインナップ豊富。カタログ取得へ", a:"2026-08-15", b:"2026-09-07"},
@@ -169,7 +175,7 @@ const DATA = [
    {n:"商標調査・出願（動物キャラ/アニボ）", st:"todo", memo:"Amazonブランド登録に登録商標が必要。登録まで数ヶ月→年内", a:"2026-11-01", b:"2026-12-15"},
    {n:"製品規制の確認（PSE/電池PSE/技適/雑貨区分）", st:"todo", memo:"電気製品を選ぶ場合", a:"2026-10-01", b:"2026-11-30"},
  ]},
- {s:"4. 自社ブランド「動物キャラ夏対策（アニボ）」②調達・パッケージ制作（展示会工場/中国OEM）", t:[
+ {s:"4. 暑さ対策ブランド②調達・パッケージ制作（展示会工場/中国OEM）", t:[
    {n:"展示会工場からカタログ取得→既製品候補を選定", st:"active", memo:"東京ビッグサイトの夏対策専門工場。MOQ100〜300。良い既製品を仕入れ→パッケージ変更でスピード商品化", a:"2026-09-08", b:"2026-10-31"},
    {n:"サンプル取得・実物確認（品質/梱包）", st:"todo", a:"2026-11-01", b:"2026-12-15"},
    {n:"MOQ/単価/リードタイム/パッケージ仕様 確定", st:"todo", a:"2026-11-15", b:"2026-12-31"},
@@ -180,7 +186,7 @@ const DATA = [
    {n:"輸送・通関（中国→日本）", st:"todo", memo:"春節明けの物流混雑を織り込む", a:"2027-02-01", b:"2027-03-10"},
    {n:"FBA納品・入庫（★4月公開前に完了）", st:"todo", a:"2027-03-01", b:"2027-03-31"},
  ]},
- {s:"5. 自社ブランド「動物キャラ夏対策（アニボ）」③Amazon販売準備・公開（4月公開/5月本番）", t:[
+ {s:"5. 暑さ対策ブランド③Amazon販売準備・公開（4月公開/5月本番）", t:[
    {n:"Amazonブランド登録（商標登録後）", st:"todo", a:"2027-01-15", b:"2027-02-28"},
    {n:"原価・利益設計（売価2000円級の妥当性）", st:"todo", memo:"原価目安1000円+手数料15%+約200円+広告で利益薄→差別化/価格で成立させる", a:"2027-02-01", b:"2027-02-28"},
    {n:"リスティング作成（タイトル/A+/画像/SEO）", st:"todo", memo:"機能ワード直球＋動物キャラの世界観", a:"2027-02-01", b:"2027-03-15"},
@@ -209,7 +215,15 @@ const totalDays=Math.round((r1-r0)/DAY)+1;
 const today=new Date(); today.setHours(0,0,0,0);
 const pos=d=>((new Date(d)-r0)/DAY)/totalDays*100;
 const wid=(a,b)=>((new Date(b)-new Date(a))/DAY+1)/totalDays*100;
-const STLABEL={done:"完了",active:"進行中",watch:"様子見",todo:"未着手",cancel:"中止"};
+const STLABEL={todo:"未着手",active:"進行中",done:"完了",watch:"様子見",cancel:"中止",late:"遅延"};
+const ST_ORDER=["todo","active","done","watch","cancel","late"];
+// 状態の手動変更（この端末のブラウザに保存。リポジトリ側=正には反映されない）
+const OVR_KEY="amzn_gantt_status_ovr_v1";
+function loadOvr(){try{return JSON.parse(localStorage.getItem(OVR_KEY)||"{}")}catch(e){return{}}}
+function saveOvr(o){try{localStorage.setItem(OVR_KEY,JSON.stringify(o))}catch(e){}}
+let STOVR=loadOvr();
+function taskKey(sec,n){return sec+"||"+n;}
+function escAttr(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
 // サマリー描画
 document.getElementById("upd").textContent = UPDATED;
@@ -252,12 +266,13 @@ function renderGantt(){
   </div>`;
 
   DATA.forEach(sec=>{
-    const act=sec.t.filter(t=>t.st!=="cancel");
-    const dc=act.filter(t=>t.st==="done").length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
+    const stOf = t => STOVR[taskKey(sec.s,t.n)] || t.st || "todo";
+    const act=sec.t.filter(t=>stOf(t)!=="cancel");
+    const dc=act.filter(t=>stOf(t)==="done").length, tot=act.length, pc=tot?Math.round(dc/tot*100):0;
     const pcColor=pc>=100?"var(--done)":pc>=50?"var(--active)":pc>0?"var(--watch)":"var(--todo)";
-    // 表示タスク（完了を隠す場合は done を除外）
-    const vis=hideDone?sec.t.filter(t=>t.st!=="done"):sec.t;
-    if(vis.length===0) return; // 全部完了の大項目は非表示
+    // 表示タスク（「完了・中止を隠す」なら done と cancel を除外）
+    const vis=hideDone?sec.t.filter(t=>{const s=stOf(t);return s!=="done"&&s!=="cancel";}):sec.t;
+    if(vis.length===0) return; // 全部が完了/中止の大項目は非表示
     const a=vis.reduce((p,t)=>new Date(t.a)<new Date(p)?t.a:p, vis[0].a);
     const b=vis.reduce((p,t)=>new Date(t.b)>new Date(p)?t.b:p, vis[0].b);
     h+=`<div class="row section">
@@ -268,19 +283,32 @@ function renderGantt(){
       <div class="track"><div class="bar group" style="left:${pos(a)}%;width:${wid(a,b)}%"></div></div>
     </div>`;
     vis.forEach(t=>{
-      const st=t.st||"todo";
-      const lbl=(st==="done"?"✓ ":st==="watch"?"◔ ":"");
+      const st=stOf(t);
+      const lbl=(st==="done"?"✓ ":st==="watch"?"◔ ":st==="late"?"! ":"");
+      const opts=ST_ORDER.map(o=>`<option value="${o}"${o===st?" selected":""}>${STLABEL[o]}</option>`).join("");
+      const sel=`<select class="stsel ${st}" data-key="${escAttr(taskKey(sec.s,t.n))}" title="状態を変更">${opts}</select>`;
       h+=`<div class="row task${st==="cancel"?" cancel":""}">
-        <div class="c name" title="${t.n}">${t.n}</div>
-        <div class="c center"><span class="pill ${st}">${STLABEL[st]}</span></div>
+        <div class="c name" title="${escAttr(t.n)}">${t.n}</div>
+        <div class="c center">${sel}</div>
         <div class="c memo">${t.memo||""}</div>
         <div class="track"><div class="bar ${st}" style="left:${pos(t.a)}%;width:${wid(t.a,t.b)}%">${lbl}</div></div>
       </div>`;
     });
   });
   g.innerHTML=h;
+  // 状態プルダウンの変更を保存して再描画
+  g.querySelectorAll(".stsel").forEach(sel=>sel.addEventListener("change",function(){
+    const k=this.getAttribute("data-key"), v=this.value;
+    if(v) STOVR[k]=v; saveOvr(STOVR); renderGantt();
+  }));
 }
 if(hideBox) hideBox.addEventListener("change", renderGantt);
+const resetBtn=document.getElementById("resetSt");
+if(resetBtn) resetBtn.addEventListener("click",function(){
+  if(Object.keys(STOVR).length && confirm("この端末で手動変更した状態をすべて元に戻します。よろしいですか？")){
+    STOVR={}; saveOvr(STOVR); renderGantt();
+  }
+});
 renderGantt();
 </script>
 </body>
